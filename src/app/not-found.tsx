@@ -1,60 +1,75 @@
-import Link from 'next/link';
-import { defaultLocale } from '@/config/locales';
+import type { Metadata } from 'next';
+import { SearchX } from 'lucide-react';
+
+import { Link } from '@/lib/i18n/routing';
+import { Section, EmptyState } from '@/components/ui';
+import { SiteShell } from '@/components/layout/SiteShell';
+import { resolveRequestLocale } from '@/lib/i18n/resolveRequestLocale';
+
+import './globals.css';
 
 /**
- * Global not-found: a path that matched no locale at all (e.g. /favicon.zip).
+ * THE 404 PAGE.
  *
- * This renders OUTSIDE any locale layout, so there is no translation context
- * and it must supply its own <html>/<body>. It deliberately does not redirect:
- * a redirect during a 404 render produces Next's bare internal error page
- * instead of a usable screen.
+ * Why this lives at the root rather than under [locale]:
  *
- * Locale-scoped 404s (/bn/missing) are handled by [locale]/not-found.tsx,
- * which is fully translated.
+ * A catch-all route (`[locale]/[...rest]`) MATCHES every unmatched path, so
+ * Next treats the request as a successful match and renders `notFound()`
+ * inline with HTTP 200 — a soft 404. Removing the catch-all lets the path
+ * match nothing, which is what makes Next return a real 404 status. The
+ * trade-off is that this page renders outside `[locale]/layout.tsx`, so it
+ * builds its own document via the shared <SiteShell> — the same shell the rest
+ * of the site uses, so header, footer, fonts and styling stay identical.
+ *
+ * Locale is resolved from the NEXT_LOCALE cookie that the next-intl middleware
+ * writes on every request, falling back to Accept-Language and then to the
+ * default. A first-time visitor who lands directly on a broken link before any
+ * cookie exists is served by the Accept-Language step.
  */
-export default function RootNotFound() {
+
+/** The English catalogue is the canonical shape for both languages. */
+type Messages = typeof import('../../messages/en.json');
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await resolveRequestLocale();
+  const messages: Messages = (await import(`../../messages/${locale}.json`))
+    .default;
+
+  return {
+    title: messages.states.notFoundTitle,
+    description: messages.states.notFoundBody,
+    // A 404 must never be indexed, whatever status the crawler sees.
+    robots: { index: false, follow: false },
+  };
+}
+
+export default async function NotFound() {
+  const locale = await resolveRequestLocale();
+  const messages: Messages = (await import(`../../messages/${locale}.json`))
+    .default;
+
+  const { states, nav } = messages;
+
   return (
-    <html lang={defaultLocale}>
-      <body
-        style={{
-          margin: 0,
-          minHeight: '100dvh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#FAF8F2',
-          color: '#24332D',
-          fontFamily: 'system-ui, sans-serif',
-          textAlign: 'center',
-          padding: '1rem',
-        }}
-      >
-        <main>
-          <h1 style={{ fontSize: '1.5rem', margin: 0 }}>
-            পাতাটি পাওয়া যায়নি
-          </h1>
-          <p style={{ marginTop: '0.5rem', color: '#4a5b54' }}>
-            Page not found
-          </p>
-          <Link
-            href={`/${defaultLocale}`}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              minHeight: '2.75rem',
-              marginTop: '1.5rem',
-              padding: '0 1.25rem',
-              borderRadius: '0.5rem',
-              backgroundColor: '#2F5D50',
-              color: '#fff',
-              fontWeight: 600,
-              textDecoration: 'none',
-            }}
-          >
-            হোম / Home
-          </Link>
-        </main>
-      </body>
-    </html>
+    <SiteShell locale={locale} messages={messages}>
+      <Section spacing="lg">
+        <EmptyState
+          icon={<SearchX className="h-8 w-8" />}
+          title={states.notFoundTitle}
+          description={states.notFoundBody}
+          action={
+            // A link, not a Button — an anchor inside a <button> is invalid
+            // HTML and breaks keyboard activation.
+            <Link
+              href="/"
+              locale={locale}
+              className="inline-flex h-12 items-center justify-center rounded-lg bg-primary-500 px-5 font-semibold text-white transition-colors hover:bg-primary-600"
+            >
+              {nav.home}
+            </Link>
+          }
+        />
+      </Section>
+    </SiteShell>
   );
 }

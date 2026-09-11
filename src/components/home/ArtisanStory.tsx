@@ -1,9 +1,10 @@
 import { useTranslations } from 'next-intl';
+import { Check } from 'lucide-react';
 
 import { Link } from '@/lib/i18n/routing';
 import type { Locale } from '@/config/locales';
 import { Container, AspectImage } from '@/components/ui';
-import { storyImage, storyStats } from '@/content/home';
+import { storyImage, storyPoints } from '@/content/home';
 import { imageSizes } from '@/config/images';
 
 /**
@@ -50,21 +51,19 @@ export function ArtisanStory({ locale }: { locale: Locale }) {
               {t('storyBodySecondary')}
             </p>
 
-            <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-beige-300 pt-5">
-              {storyStats.map((stat) => (
-                <div key={stat.key}>
-                  <dt className="sr-only">{t(stat.labelKey)}</dt>
-                  <dd>
-                    <span className="block text-xl font-bold text-primary-600 sm:text-2xl">
-                      {t(stat.valueKey)}
-                    </span>
-                    <span className="mt-0.5 block text-xs leading-snug text-ink-500 sm:text-sm">
-                      {t(stat.labelKey)}
-                    </span>
-                  </dd>
-                </div>
+            <ul className="mt-6 space-y-2.5 border-t border-beige-300 pt-5">
+              {storyPoints.map((point) => (
+                <li key={point.key} className="flex items-start gap-2.5">
+                  <Check
+                    className="mt-0.5 h-5 w-5 shrink-0 text-leaf-700"
+                    aria-hidden="true"
+                  />
+                  <span className="text-sm text-ink-600 sm:text-base">
+                    {t(point.labelKey)}
+                  </span>
+                </li>
               ))}
-            </dl>
+            </ul>
 
             <Link
               href="/about"

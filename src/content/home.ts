@@ -53,8 +53,17 @@ export const storyImage = (altEn: string, altBn: string): ImageAsset => ({
   isPlaceholder: true,
 });
 
-export const storyStats = [
-  { key: 'stat1', valueKey: 'storyStat1Value', labelKey: 'storyStat1Label' },
-  { key: 'stat2', valueKey: 'storyStat2Value', labelKey: 'storyStat2Label' },
-  { key: 'stat3', valueKey: 'storyStat3Value', labelKey: 'storyStat3Label' },
+/**
+ * Qualitative points about how the work is organised.
+ *
+ * Deliberately NOT statistics. Numbers like "40+ artisans" or "6 villages"
+ * would read as verified business facts, and nobody has verified them — so
+ * they are not stated at all until the business supplies real figures.
+ * Replacing these with audited numbers later is an edit to this array plus
+ * its message keys; the component renders whatever it is given.
+ */
+export const storyPoints = [
+  { key: 'point1', labelKey: 'storyPoint1' },
+  { key: 'point2', labelKey: 'storyPoint2' },
+  { key: 'point3', labelKey: 'storyPoint3' },
 ];

@@ -2,19 +2,26 @@
 
 import { useTranslations } from 'next-intl';
 import { ShoppingBag } from 'lucide-react';
-import { Button, useToast } from '@/components/ui';
+import { Button } from '@/components/ui';
 
 /**
  * Add to Cart.
  *
- * SPRINT 2 NOTE: the cart store arrives in Sprint 5. Until then this button
- * deliberately tells the customer the truth rather than showing a false
- * "added to cart" confirmation for an item that was not stored anywhere.
+ * SPRINT 2 STATE: the cart store arrives in Sprint 5, so the action is
+ * genuinely disabled and labelled "Cart coming soon". It is deliberately
+ * inert rather than showing an "Added to cart" confirmation for an item that
+ * is not stored anywhere — a fake success is worse than a disabled control,
+ * especially for a first-time online shopper deciding whether to trust the
+ * shop.
  *
- * Sprint 5 replaces the body of `handleAdd` with the store call and switches
- * the toast to `cart.addedToCart` (already translated). Nothing else about
- * this component — or any card using it — needs to change.
+ * SPRINT 5: delete the `cartReady = false` constant and its two branches, and
+ * wire `onClick` to the cart store. The label, the disabled-on-out-of-stock
+ * behaviour and every caller stay exactly as they are.
  */
+
+/** Flipped to true in Sprint 5 when the cart store lands. */
+const CART_READY = false;
+
 export function AddToCartButton({
   productId,
   disabled = false,
@@ -28,19 +35,29 @@ export function AddToCartButton({
 }) {
   const t = useTranslations('actions');
   const tCart = useTranslations('cart');
-  const { show } = useToast();
 
-  const handleAdd = () => {
-    void productId; // Sprint 5: addItem(productId, 1)
-    show(tCart('notReadyYet'), 'info');
-  };
+  if (!CART_READY) {
+    return (
+      <Button
+        size={size}
+        variant="outline"
+        fullWidth={fullWidth}
+        disabled
+        leadingIcon={<ShoppingBag className="h-4 w-4" />}
+      >
+        {tCart('comingSoon')}
+      </Button>
+    );
+  }
 
   return (
     <Button
       size={size}
       fullWidth={fullWidth}
       disabled={disabled}
-      onClick={handleAdd}
+      onClick={() => {
+        void productId; // Sprint 5: addItem(productId, 1)
+      }}
       leadingIcon={<ShoppingBag className="h-4 w-4" />}
     >
       {t('addToCart')}
