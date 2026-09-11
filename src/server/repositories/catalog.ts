@@ -1,10 +1,17 @@
 import 'server-only';
 
+import { cache } from 'react';
+
 import type { Prisma } from '@/generated/prisma/client';
 
 import { db } from '@/server/db/client';
 import { fallbackProductImage, placeholderImages } from '@/config/images';
-import type { CategoryCardData, ProductCardData, ImageAsset } from '@/types/content';
+import type {
+  CategoryCardData,
+  ProductCardData,
+  ImageAsset,
+  LocalizedText,
+} from '@/types/content';
 import { PAGE_SIZE, type ShopQuery, type SortOption } from '@/lib/shop/searchParams';
 
 /**
@@ -266,4 +273,115 @@ export async function getPriceBounds(): Promise<{ min: number; max: number }> {
     min: result._min.effectivePricePoisha ?? 0,
     max: result._max.effectivePricePoisha ?? 0,
   };
+}
+
+/* ------------------------------------------------------------------------ *
+ * PRODUCT DETAIL (Sprint 4)
+ * ------------------------------------------------------------------------ */
+
+/** Everything the product page shows, already localised into pairs. */
+export interface ProductDetail extends ProductCardData {
+  description: LocalizedText | null;
+  materials: LocalizedText | null;
+  care: LocalizedText | null;
+  dimensions: LocalizedText | null;
+  weightGrams: number | null;
+  /** Every image, in sort order. The gallery decides what to do with them. */
+  images: ImageAsset[];
+  category: { slug: string; name: LocalizedText };
+  /** Needed to find siblings; never rendered. */
+  categoryId: string;
+}
+
+/**
+ * Pair two nullable bilingual columns into one field.
+ *
+ * Returns null unless BOTH languages are present: a specification row that
+ * renders in English and blank in Bengali is worse than one that is absent in
+ * both, because only one of the two audiences ever sees the hole.
+ */
+function pair(en: string | null, bn: string | null): LocalizedText | null {
+  return en && bn ? { en, bn } : null;
+}
+
+/**
+ * One product, by slug, for the detail page.
+ *
+ * Returns null rather than throwing, so the page can answer with a real 404.
+ *
+ * Wrapped in React's `cache()` because both `generateMetadata` and the page
+ * component need the same product: without it Next runs this function twice
+ * per request and Prisma issues the product, image and category queries twice
+ * over — eight round trips to render one page instead of five. `cache()`
+ * memoises per request, so the second caller gets the first one's result.
+ *
+ * The storefront predicate is applied here, not in the caller: an inactive or
+ * soft-deleted product is indistinguishable from a slug that never existed,
+ * which is exactly right. A customer must not be able to tell that a product
+ * was withdrawn by watching the status code change.
+ */
+export const getProductBySlug = cache(async function getProductBySlug(
+  slug: string,
+): Promise<ProductDetail | null> {
+  const product = await db.product.findFirst({
+    where: { slug, ...STOREFRONT },
+    include: {
+      images: { orderBy: { sortOrder: 'asc' } },
+      category: {
+        select: { id: true, slug: true, nameEn: true, nameBn: true, isActive: true },
+      },
+    },
+  });
+
+  if (!product) return null;
+
+  const card = toProductCardData(product);
+
+  return {
+    ...card,
+    description: pair(product.descriptionEn, product.descriptionBn),
+    materials: pair(product.materialsEn, product.materialsBn),
+    care: pair(product.careEn, product.careBn),
+    dimensions: pair(product.dimensionsEn, product.dimensionsBn),
+    weightGrams: product.weightGrams,
+    images:
+      product.images.length > 0
+        ? product.images.map((image) =>
+            toImageAsset(image, { en: product.nameEn, bn: product.nameBn }),
+          )
+        : // A product with no image row still has to render something, and the
+          // gallery should not have to know about that case.
+          [fallbackProductImage],
+    category: {
+      slug: product.category.slug,
+      name: { en: product.category.nameEn, bn: product.category.nameBn },
+    },
+    categoryId: product.categoryId,
+  };
+});
+
+/**
+ * A few other products from the same category.
+ *
+ * Category membership is the only relationship the schema actually models, so
+ * it is the only one used: there is no purchase history to mine and no
+ * similarity data, and inventing a "recommendation" from nothing would be
+ * dressing up a random pick. In-stock items come first, because suggesting
+ * something unbuyable is worse than suggesting nothing.
+ *
+ * Bounded by `take`, so this never grows into a catalogue fetch.
+ */
+export async function getRelatedProducts(
+  categoryId: string,
+  excludeProductId: string,
+  limit = 4,
+): Promise<ProductCardData[]> {
+  const products = await db.product.findMany({
+    where: { categoryId, id: { not: excludeProductId }, ...STOREFRONT },
+    include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } },
+    orderBy: [{ stock: 'desc' }, { isFeatured: 'desc' }, { id: 'asc' }],
+    take: limit,
+  });
+
+  return products.map(toProductCardData);
 }

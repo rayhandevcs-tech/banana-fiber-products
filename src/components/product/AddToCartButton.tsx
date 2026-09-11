@@ -1,62 +1,75 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 import { ShoppingBag } from 'lucide-react';
-import { Button } from '@/components/ui';
+
+import { Button, useToast } from '@/components/ui';
+import type { Locale } from '@/config/locales';
+import type { ProductCardData } from '@/types/content';
+import { useCartStore } from '@/lib/cart/store';
 
 /**
- * Add to Cart.
+ * Add to Cart, as it appears on a product card.
  *
- * SPRINT 2 STATE: the cart store arrives in Sprint 5, so the action is
- * genuinely disabled and labelled "Cart coming soon". It is deliberately
- * inert rather than showing an "Added to cart" confirmation for an item that
- * is not stored anywhere — a fake success is worse than a disabled control,
- * especially for a first-time online shopper deciding whether to trust the
- * shop.
+ * The card's version always adds one unit; choosing a quantity is what the
+ * product page is for. Both go through the same `addItem`, so the rule that a
+ * repeat add tops up the existing line rather than creating a second one lives
+ * in one place and cannot drift between the two entry points.
  *
- * SPRINT 5: delete the `cartReady = false` constant and its two branches, and
- * wire `onClick` to the cart store. The label, the disabled-on-out-of-stock
- * behaviour and every caller stay exactly as they are.
+ * It takes the whole card record rather than an id because the cart stores a
+ * snapshot of what the customer was looking at — name, price and image — so
+ * the cart can be drawn without another round trip. That snapshot is for
+ * display only; checkout re-reads everything from the database.
  */
-
-/** Flipped to true in Sprint 5 when the cart store lands. */
-const CART_READY = false;
-
 export function AddToCartButton({
-  productId,
+  product,
   disabled = false,
   fullWidth = true,
   size = 'sm',
 }: {
-  productId: string;
+  product: ProductCardData;
   disabled?: boolean;
   fullWidth?: boolean;
   size?: 'sm' | 'md' | 'lg';
 }) {
   const t = useTranslations('actions');
-  const tCart = useTranslations('cart');
+  const tProduct = useTranslations('productPage');
+  const locale = useLocale() as Locale;
+  const { show } = useToast();
 
-  if (!CART_READY) {
-    return (
-      <Button
-        size={size}
-        variant="outline"
-        fullWidth={fullWidth}
-        disabled
-        leadingIcon={<ShoppingBag className="h-4 w-4" />}
-      >
-        {tCart('comingSoon')}
-      </Button>
-    );
-  }
+  const addItem = useCartStore((state) => state.addItem);
+  const outOfStock = product.stock <= 0;
 
   return (
     <Button
       size={size}
       fullWidth={fullWidth}
-      disabled={disabled}
+      disabled={disabled || outOfStock}
       onClick={() => {
-        void productId; // Sprint 5: addItem(productId, 1)
+        const before = useCartStore
+          .getState()
+          .lines.find((line) => line.productId === product.id)?.quantity;
+
+        const resulting = addItem(
+          {
+            productId: product.id,
+            slug: product.slug,
+            name: product.name,
+            pricePoisha: product.pricePoisha,
+            discountPoisha: product.discountPoisha,
+            image: product.image,
+            stockAtAdd: product.stock,
+          },
+          1,
+          product.stock,
+        );
+
+        // Unchanged means the cart already held every unit in stock. Saying
+        // "added" there would be a small lie the customer discovers later.
+        if (resulting === (before ?? 0)) return;
+
+        show(tProduct('addedToCart', { name: product.name[locale] }), 'success');
       }}
       leadingIcon={<ShoppingBag className="h-4 w-4" />}
     >
