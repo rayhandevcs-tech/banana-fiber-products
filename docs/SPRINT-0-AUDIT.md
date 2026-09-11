@@ -55,7 +55,7 @@ Section 28 asks for per-product titles, meta descriptions, Open Graph metadata, 
 Section 27 targets low-end Android on slow connections and the stated priority order puts mobile experience second overall. An SPA must ship, parse, and execute the router, i18n catalogues, state layer, and every page component before the first product is visible. Server-rendered HTML with selective hydration is materially faster on exactly the devices that matter here.
 
 ### B4. Customer authentication is under-specified
-The header spec lists an **Account** item and Section 13 requires customers to track order progress, but checkout collects only **Name + Phone** with no password, no email, and no account step. These cannot all be true simultaneously. Three coherent readings exist (guest-only + phone/order-ID lookup; OTP accounts; password accounts) and they produce materially different work in Sprint 8. See Open Decisions.
+The header spec lists an **Account** item and Section 13 requires customers to track order progress, but checkout collects only **Name + Phone** with no password, no email, and no account step. These cannot all be true simultaneously. **Resolved:** guest checkout only. No customer registration; orders are tracked with order number + phone. The header's "Account" item becomes **Track Order**. Sprint 8 therefore covers admin authentication plus a public order-lookup form — nothing more.
 
 ### B5. Bengali typography will break layouts if treated as a translation pass
 Bengali strings run 20–40% longer than their English equivalents and Noto Sans Bengali needs ~1.7 line-height where Inter needs ~1.5. Deferring i18n to Sprint 7 means every button, card, table header, and admin label built in Sprints 1–6 gets laid out against short English strings and then breaks. **Mitigation:** build the i18n *plumbing* in Sprint 1 and author every string as a translation key from the first component onward; Sprint 7 then becomes "complete and audit the catalogues", not "retrofit bilingualism". This is a deliberate, and I think necessary, adjustment to the proposed sprint order.
@@ -79,7 +79,7 @@ Section 13 requires admin-editable delivery pricing with no code changes, and gi
 
 ## C. Recommended Architecture
 
-### C1. Stack recommendation: Next.js (App Router) full-stack
+### C1. Stack: Next.js (App Router) full-stack — **CONFIRMED**
 
 **Recommended:**
 
@@ -89,10 +89,10 @@ Section 13 requires admin-editable delivery pricing with no code changes, and gi
 | Rendering | Server Components by default; Client Components only where interactivity requires |
 | Styling | Tailwind CSS v4 with design tokens as CSS custom properties |
 | Database | PostgreSQL + Prisma ORM |
-| Auth | Auth.js (NextAuth) credentials provider, or `iron-session` — admin sessions, HTTP-only cookies |
+| Auth | `iron-session` — **admin only**; customers use guest checkout + order lookup |
 | Validation | Zod schemas shared verbatim between client and server |
 | i18n | `next-intl` — locale-prefixed routes (`/bn/...`, `/en/...`), instant switch, persisted |
-| Images | `next/image` + Cloudinary (or Supabase Storage) — responsive AVIF/WebP variants |
+| Images | `next/image` + **Cloudinary** — responsive AVIF/WebP variants |
 | Cart state | Zustand + `localStorage` persistence |
 | Server state | React Server Components + Server Actions; TanStack Query only in admin where needed |
 
@@ -322,13 +322,20 @@ Fonts: **Inter** (Latin) + **Noto Sans Bengali** via `next/font/google`, self-ho
 | R8 | Hosting/deploy target unknown | Sprint 15–16 surprises | Confirm target (Vercel vs VPS) — it constrains image handling and the DB choice |
 | R9 | Scope is very large for sequential sprints | Fatigue, half-finished areas | Strict one-sprint-at-a-time, each ending in a runnable, QA'd state — as you specified |
 
-### Open decisions I need from you
+### Decisions confirmed (2026-09-11)
 
-1. **Stack** — Next.js full-stack (recommended) vs Vite SPA + Express API (the brief's original sketch).
-2. **Database** — PostgreSQL + Prisma (recommended) vs Supabase (Postgres + storage + auth managed) vs MongoDB + Mongoose.
-3. **Image hosting** — Cloudinary (the brief mentions Cloudinary secrets) vs Supabase Storage vs local filesystem.
-4. **Customer accounts** — guest checkout + phone/order-number tracking (simplest, recommended) vs OTP login vs password accounts. This resolves B4.
+| Decision | Chosen | Consequence for Sprint 1 |
+|---|---|---|
+| **Stack** | Next.js 15 App Router + TypeScript + Tailwind v4 | Server Components by default; Server Actions as the controller layer; no separate API service |
+| **Database** | PostgreSQL + Prisma | Schema + migrations + seed land in Sprint 1; integer poisha for all money |
+| **Images** | Cloudinary | `next/image` with the Cloudinary loader; upload widget built in Sprint 10; secrets server-side only |
+| **Customer auth** | Guest checkout + phone/order-number lookup | **Resolves B4.** No customer registration anywhere. Header "Account" becomes **Track Order** (`অর্ডার ট্র্যাক করুন`). Auth in Sprint 8 covers admin only, plus the public order-lookup form. Orders are keyed by `orderNumber` + `customerPhone`. |
+
+Still outstanding, not blocking Sprint 1:
+
+- **Reference images (R1)** — needed before Sprint 2 (homepage hero). Sprint 1 is design tokens and components, which the written palette covers.
+- **Hosting target (R8)** — Vercel vs VPS. Affects Sprint 15 only; Cloudinary + managed Postgres keeps both options open.
 
 ---
 
-**Sprint 0 is complete. No application code has been written. Awaiting approval to begin Sprint 1.**
+**Sprint 0 is complete. No application code has been written. Architecture decisions are signed off; awaiting the go-ahead to begin Sprint 1.**
