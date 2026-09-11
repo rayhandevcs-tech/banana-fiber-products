@@ -3,23 +3,26 @@
 import { useTranslations } from 'next-intl';
 import { ShoppingBag } from 'lucide-react';
 import { Link } from '@/lib/i18n/routing';
+import { useCartStore, selectItemCount } from '@/lib/cart/store';
 import { cn } from '@/lib/utils/cn';
 
 /**
  * Cart entry point with an item-count badge.
  *
- * The count is a prop rather than a store read: the cart store arrives in
- * Sprint 5, and keeping this component stateless means it does not have to
- * change when it does.
+ * Reads the cart store directly, so adding something anywhere on the site
+ * updates the badge without any page having to thread a count down to the
+ * header.
+ *
+ * The count is held back until the store reports itself hydrated. The cart
+ * lives in localStorage, which the server cannot read, so the server always
+ * renders zero; showing the real number on the first client render would be a
+ * hydration mismatch. One frame of "no badge" is the cost.
  */
-export function CartButton({
-  itemCount = 0,
-  className,
-}: {
-  itemCount?: number;
-  className?: string;
-}) {
+export function CartButton({ className }: { className?: string }) {
   const t = useTranslations('cart');
+  const hydrated = useCartStore((state) => state.hydrated);
+  const storedCount = useCartStore(selectItemCount);
+  const itemCount = hydrated ? storedCount : 0;
 
   return (
     <Link

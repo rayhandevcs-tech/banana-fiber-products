@@ -94,7 +94,7 @@ export function ProductCard({
 
         <StockBadge level={level} label={stockLabel} className="self-start" />
 
-        <AddToCartButton productId={product.id} disabled={isOutOfStock} />
+        <AddToCartButton product={product} disabled={isOutOfStock} />
       </div>
     </article>
   );
