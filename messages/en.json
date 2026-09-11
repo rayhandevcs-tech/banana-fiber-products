@@ -32,7 +32,7 @@
     "itemCount": "{count, plural, =0 {Cart is empty} one {# item} other {# items}}",
     "empty": "Your cart is empty",
     "addedToCart": "Added to your cart",
-    "notReadyYet": "The cart opens in the next update. For now, call us to order."
+    "comingSoon": "Cart coming soon"
   },
   "language": {
     "label": "Language",
@@ -136,9 +136,9 @@
   "home": {
     "metaTitle": "Handmade Banana Fiber Products",
     "metaDescription": "Baskets, bags, mats and home decor handwoven from natural banana fiber by rural artisans in Bangladesh. Cash on delivery across the country.",
-    "heroEyebrow": "Handmade in Bangladesh",
-    "heroTitle": "Handmade with Nature. Made for Life.",
-    "heroBody": "Every basket, bag and mat here is woven by hand from banana fiber grown in our own villages. Natural materials, made to last, by artisans we know by name.",
+    "heroEyebrow": "Natural • Handmade • Sustainable",
+    "heroTitle": "Handmade with Natural Banana Fiber",
+    "heroBody": "Crafted with care and inspired by traditional Bangladeshi craftsmanship.",
     "heroImageAlt": "A woven banana fiber basket, tote bag and round mat grouped together",
     "categoriesTitle": "Shop by Category",
     "categoriesSubtitle": "Find what you need for your home.",
@@ -174,18 +174,15 @@
     "storyBody": "Our workshop is in Jhenaidah, where most of the weaving is done at home between other work. Artisans are paid per finished piece at a rate agreed before the work starts, and they keep their own hours.",
     "storyBodySecondary": "We are a small operation and we would rather grow slowly than change how any of that works.",
     "storyImageAlt": "An artisan weaving a banana fiber basket by hand",
-    "storyStat1Value": "40+",
-    "storyStat1Label": "Artisans working with us",
-    "storyStat2Value": "6",
-    "storyStat2Label": "Villages",
-    "storyStat3Value": "100%",
-    "storyStat3Label": "Natural materials",
-    "storyPlaceholderNote": "Placeholder copy — to be replaced with the real community story.",
+    "storyPlaceholderNote": "Placeholder copy. To be replaced with verified information about our community.",
     "testimonialsTitle": "What Customers Say",
     "testimonialsSubtitle": "A few notes from people who have ordered from us.",
     "ctaTitle": "Bring natural craftsmanship into your home.",
     "ctaBody": "Browse the full collection. Cash on delivery is available anywhere in Bangladesh.",
     "viewAllProducts": "View All Products",
-    "categoryProductCount": "{count, plural, =0 {No products yet} one {# product} other {# products}}"
+    "categoryProductCount": "{count, plural, =0 {No products yet} one {# product} other {# products}}",
+    "storyPoint1": "Woven at home, around other work",
+    "storyPoint2": "Paid per finished piece, at a rate agreed first",
+    "storyPoint3": "Natural materials, sourced locally"
   }
 }
