@@ -3,14 +3,18 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Search, X } from 'lucide-react';
+
+import { useRouter } from '@/lib/i18n/routing';
+import { buildShopHref } from '@/lib/shop/searchParams';
 import { cn } from '@/lib/utils/cn';
 
 /**
  * Search input.
  *
- * Submitting is wired up in Sprint 3 when the shop page exists; the field is
- * a real, accessible <form> here so the header layout is final and the wiring
- * is a one-line change rather than a redesign.
+ * Submits into the shop, which owns product discovery: the query becomes
+ * `/shop?search=…` and the server renders the matching products. Searching
+ * from the header and searching from within the shop therefore land on
+ * exactly the same URL, and that URL can be shared or bookmarked.
  */
 export function SearchBar({
   className,
@@ -23,6 +27,7 @@ export function SearchBar({
   onClose?: () => void;
 }) {
   const t = useTranslations('search');
+  const router = useRouter();
   const [query, setQuery] = useState('');
 
   return (
@@ -31,7 +36,12 @@ export function SearchBar({
       className={cn('relative flex w-full items-center', className)}
       onSubmit={(event) => {
         event.preventDefault();
-        // Sprint 3: navigate to /shop?q=…
+        const trimmed = query.trim();
+        if (trimmed.length === 0) return;
+        // Closes the mobile search overlay before navigating, so the customer
+        // is not left looking at the results through an open panel.
+        onClose?.();
+        router.push(buildShopHref({ search: trimmed }));
       }}
     >
       <label htmlFor="site-search" className="sr-only">
