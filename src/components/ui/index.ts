@@ -15,6 +15,8 @@ export {
   QuantitySelector,
   type QuantitySelectorProps,
 } from './QuantitySelector';
+export { AspectImage, type AspectImageProps } from './AspectImage';
+export { PriceDisplay, type PriceDisplayProps } from './PriceDisplay';
 export { Container, type ContainerProps } from './Container';
 export { Section, type SectionProps } from './Section';
 export { PageHeader, type PageHeaderProps } from './PageHeader';

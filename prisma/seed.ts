@@ -21,6 +21,25 @@ const db = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 /** Whole Taka → integer poisha. Money is never a float. */
 const taka = (amount: number) => Math.round(amount * 100);
 
+/**
+ * TEMPORARY placeholder artwork, keyed by SKU prefix.
+ *
+ * These are locally generated SVG illustrations, not photographs. When real
+ * product photography is uploaded (Sprint 10), these ProductImage rows are
+ * replaced and this map can be deleted — nothing else depends on it.
+ */
+const PLACEHOLDER_BY_PREFIX: Record<string, string> = {
+  'BF-BSK': '/images/placeholders/basket.svg',
+  'BF-BAG': '/images/placeholders/bag.svg',
+  'BF-MAT': '/images/placeholders/mat.svg',
+  'BF-STR': '/images/placeholders/storage.svg',
+  'BF-DEC': '/images/placeholders/decor.svg',
+  'BF-GFT': '/images/placeholders/gift.svg',
+};
+
+const placeholderFor = (sku: string) =>
+  PLACEHOLDER_BY_PREFIX[sku.slice(0, 6)] ?? '/images/placeholders/weave.svg';
+
 async function main() {
   console.log('Seeding database…\n');
 
@@ -544,6 +563,23 @@ async function main() {
       },
     });
 
+    // Placeholder artwork so the catalogue renders before real photography
+    // exists. Skipped if the product already has images.
+    const existingImages = await db.productImage.count({
+      where: { productId: product.id },
+    });
+    if (existingImages === 0) {
+      await db.productImage.create({
+        data: {
+          productId: product.id,
+          url: placeholderFor(product.sku),
+          altEn: product.nameEn,
+          altBn: product.nameBn,
+          sortOrder: 0,
+        },
+      });
+    }
+
     // Opening stock balance — the first row of the append-only audit trail.
     const existingMovements = await db.stockMovement.count({
       where: { productId: product.id },
@@ -562,6 +598,7 @@ async function main() {
     productCount++;
   }
   console.log(`  ✓ ${productCount} products (1 low stock, 1 out of stock, 1 inactive)`);
+  console.log('  ✓ placeholder image attached to each product');
 
   // -------------------------------------------------------------------------
   // Settings
