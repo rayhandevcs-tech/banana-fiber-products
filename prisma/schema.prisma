@@ -1,0 +1,472 @@
+// ===========================================================================
+// BANANA FIBER — DATABASE SCHEMA
+//
+// Locked conventions (approved in Sprint 0):
+//   • Money is ALWAYS an Int in poisha (1 Taka = 100 poisha). Never Float.
+//   • OrderItem snapshots product name and price at purchase time.
+//   • StockMovement is append-only — never updated, never deleted.
+//   • Products are soft-deleted via `deletedAt`.
+//   • DeliveryRate is priced on the (method × zone) grid, editable by admin.
+//   • Customer-facing content is bilingual via paired *En / *Bn columns.
+// ===========================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// USERS — admin/staff only. Customers do not have accounts (guest checkout).
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  ADMIN // full access, including settings and user management
+  STAFF // day-to-day operations: orders, stock; no settings access
+}
+
+model User {
+  id           String   @id @default(cuid())
+  phone        String   @unique // 11-digit BD mobile, the login identifier
+  name         String
+  passwordHash String
+  role         UserRole @default(STAFF)
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  stockMovements StockMovement[]
+  verifiedPayments Payment[]     @relation("PaymentVerifiedBy")
+  orderEvents    OrderEvent[]
+
+  @@index([role, isActive])
+  @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// CATALOG
+// ---------------------------------------------------------------------------
+
+model Category {
+  id            String  @id @default(cuid())
+  slug          String  @unique
+  nameEn        String
+  nameBn        String
+  descriptionEn String?
+  descriptionBn String?
+  imageUrl      String?
+  sortOrder     Int     @default(0)
+  isActive      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@index([isActive, sortOrder])
+  @@map("categories")
+}
+
+model Product {
+  id         String @id @default(cuid())
+  slug       String @unique // SEO-friendly URL: /products/banana-fiber-storage-basket
+  sku        String @unique // human-facing stock code, e.g. BF-BSK-001
+  categoryId String
+
+  // -- Bilingual content ----------------------------------------------------
+  nameEn        String
+  nameBn        String
+  shortDescEn   String? @db.VarChar(280)
+  shortDescBn   String? @db.VarChar(280)
+  descriptionEn String?
+  descriptionBn String?
+  materialsEn   String?
+  materialsBn   String?
+  careEn        String?
+  careBn        String?
+
+  // -- Pricing: integer poisha, never Float --------------------------------
+  pricePoisha    Int
+  discountPoisha Int @default(0) // absolute discount, not a percentage
+
+  // -- Inventory ------------------------------------------------------------
+  // `stock` is the running total; StockMovement is the audit trail that
+  // explains how it got there. The two are written together in one
+  // transaction (Sprint 11) so they can never drift apart.
+  stock             Int @default(0)
+  lowStockThreshold Int @default(5)
+
+  // -- Physical attributes --------------------------------------------------
+  dimensionsEn String? // "30cm × 25cm × 20cm"
+  dimensionsBn String?
+  weightGrams  Int?
+
+  // -- Flags ----------------------------------------------------------------
+  isFeatured Boolean @default(false)
+  isActive   Boolean @default(true)
+
+  // Soft delete: a mis-tapped delete is recoverable and order history keeps
+  // its foreign keys. Every customer-facing query must filter `deletedAt: null`.
+  deletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category       Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images         ProductImage[]
+  stockMovements StockMovement[]
+  orderItems     OrderItem[]
+
+  @@index([categoryId, isActive, deletedAt])
+  @@index([isFeatured, isActive, deletedAt])
+  @@index([deletedAt])
+  @@map("products")
+}
+
+model ProductImage {
+  id        String @id @default(cuid())
+  productId String
+
+  // Cloudinary public ID is stored alongside the URL so images can be
+  // transformed (resize/format) and deleted from Cloudinary later.
+  url             String
+  cloudinaryId    String?
+  altEn           String?
+  altBn           String?
+  sortOrder       Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, sortOrder])
+  @@map("product_images")
+}
+
+// ---------------------------------------------------------------------------
+// INVENTORY — append-only audit trail
+// ---------------------------------------------------------------------------
+
+enum StockMovementReason {
+  RESTOCK    // new stock received
+  SALE       // deducted when an order is placed
+  RETURN     // customer returned an item
+  DAMAGE     // written off
+  CORRECTION // manual count correction by an operator
+  INITIAL    // opening balance when the product was created
+}
+
+/// Append-only. Rows are never updated or deleted — a mistake is corrected by
+/// writing a compensating CORRECTION row, so the history stays truthful.
+model StockMovement {
+  id        String              @id @default(cuid())
+  productId String
+  delta     Int // signed: +20 received, -1 sold
+  reason    StockMovementReason
+  note      String?
+  /// Stock level immediately after this movement — lets the history be read
+  /// without re-summing every prior row.
+  resultingStock Int
+  /// Null for automated movements (e.g. a customer order deducting stock).
+  userId    String?
+  orderId   String?
+
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([productId, createdAt])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
+
+// ---------------------------------------------------------------------------
+// DELIVERY — method × zone pricing grid, editable from admin without code
+// ---------------------------------------------------------------------------
+
+model DeliveryMethod {
+  id        String  @id @default(cuid())
+  code      String  @unique // HOME_DELIVERY | PICKUP
+  nameEn    String
+  nameBn    String
+  descEn    String?
+  descBn    String?
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rates  DeliveryRate[]
+  orders Order[]
+
+  @@index([isActive, sortOrder])
+  @@map("delivery_methods")
+}
+
+model DeliveryZone {
+  id        String  @id @default(cuid())
+  code      String  @unique // INSIDE_DHAKA | OUTSIDE_DHAKA
+  nameEn    String
+  nameBn    String
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rates     DeliveryRate[]
+  districts District[]
+  orders    Order[]
+
+  @@index([isActive, sortOrder])
+  @@map("delivery_zones")
+}
+
+/// The price of (method × zone). Admin edits these rows; no code change is
+/// ever needed to change delivery pricing.
+model DeliveryRate {
+  id       String @id @default(cuid())
+  methodId String
+  zoneId   String
+
+  chargePoisha Int
+  /// Order subtotal above which delivery is free. Null = never free.
+  freeAbovePoisha Int?
+  /// Human guidance shown at checkout, e.g. "2-3 days".
+  estimatedDaysEn String?
+  estimatedDaysBn String?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  method DeliveryMethod @relation(fields: [methodId], references: [id], onDelete: Cascade)
+  zone   DeliveryZone   @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@unique([methodId, zoneId])
+  @@map("delivery_rates")
+}
+
+/// The 64 districts of Bangladesh, each mapped to a delivery zone so that
+/// choosing a district at checkout resolves the delivery charge automatically.
+model District {
+  id       String @id @default(cuid())
+  nameEn   String
+  nameBn   String
+  divisionEn String
+  divisionBn String
+  zoneId   String
+
+  zone DeliveryZone @relation(fields: [zoneId], references: [id], onDelete: Restrict)
+
+  @@unique([nameEn])
+  @@index([zoneId])
+  @@map("districts")
+}
+
+// ---------------------------------------------------------------------------
+// ORDERS
+// ---------------------------------------------------------------------------
+
+enum OrderStatus {
+  PENDING        // placed, not yet confirmed by the shop
+  CONFIRMED
+  PROCESSING
+  PACKED
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  BKASH
+  NAGAD
+  ROCKET
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+model Order {
+  id String @id @default(cuid())
+
+  /// Human-readable and customer-facing, e.g. BF-2026-00142. This plus the
+  /// phone number is how a guest customer looks up their order — there are
+  /// no customer accounts.
+  orderNumber String @unique
+
+  // -- Customer (guest checkout: no account, no password) -------------------
+  customerName  String
+  customerPhone String // normalised 11-digit BD mobile
+
+  // -- Delivery address -----------------------------------------------------
+  districtName String
+  upazila      String
+  area         String?
+  addressLine  String
+  deliveryNote String?
+
+  deliveryMethodId String
+  deliveryZoneId   String
+
+  // -- Money: integer poisha, all captured at order time --------------------
+  subtotalPoisha       Int
+  deliveryChargePoisha Int
+  discountPoisha       Int @default(0)
+  totalPoisha          Int
+
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(PENDING)
+
+  placedAt    DateTime  @default(now())
+  confirmedAt DateTime?
+  deliveredAt DateTime?
+  cancelledAt DateTime?
+  cancelReason String?
+
+  updatedAt DateTime @updatedAt
+
+  deliveryMethod DeliveryMethod  @relation(fields: [deliveryMethodId], references: [id], onDelete: Restrict)
+  deliveryZone   DeliveryZone    @relation(fields: [deliveryZoneId], references: [id], onDelete: Restrict)
+  items          OrderItem[]
+  payments       Payment[]
+  events         OrderEvent[]
+  stockMovements StockMovement[]
+
+  @@index([customerPhone, orderNumber])
+  @@index([status, placedAt])
+  @@index([paymentStatus])
+  @@index([placedAt])
+  @@map("orders")
+}
+
+/// Snapshots product name and price at purchase time, so renaming, repricing
+/// or deleting a product never rewrites history on an existing order.
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  /// Nullable: kept for reporting, but an order stays intact even if the
+  /// product row is later hard-deleted.
+  productId String?
+
+  nameEnSnapshot String
+  nameBnSnapshot String
+  skuSnapshot    String
+  imageUrlSnapshot String?
+
+  unitPricePoisha Int
+  /// Per-unit discount applied at the time of purchase.
+  unitDiscountPoisha Int @default(0)
+  quantity           Int
+  lineTotalPoisha    Int
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+/// Status-change history, so an operator can see what happened and when.
+model OrderEvent {
+  id      String @id @default(cuid())
+  orderId String
+
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  note       String?
+  userId     String?
+
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([orderId, createdAt])
+  @@map("order_events")
+}
+
+// ---------------------------------------------------------------------------
+// PAYMENTS — provider-agnostic. Real gateway drivers arrive in Sprint 13;
+// until then bKash/Nagad/Rocket are recorded by manual transaction-ID
+// verification, which this model already supports.
+// ---------------------------------------------------------------------------
+
+model Payment {
+  id      String @id @default(cuid())
+  orderId String
+
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+  amountPoisha Int
+
+  /// Customer-supplied for manual mobile-banking verification, or returned by
+  /// the gateway once a real integration is live.
+  transactionId String?
+  senderNumber  String?
+
+  /// Admin who confirmed a manually verified payment.
+  verifiedByUserId String?
+  verifiedAt       DateTime?
+
+  /// Raw gateway response, kept for reconciliation. Never rendered to a client.
+  gatewayPayload Json?
+  failureReason  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order      Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  verifiedBy User? @relation("PaymentVerifiedBy", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([status, createdAt])
+  @@index([transactionId])
+  @@map("payments")
+}
+
+// ---------------------------------------------------------------------------
+// MISC
+// ---------------------------------------------------------------------------
+
+/// Key/value store for admin-editable settings (shop name, contact details,
+/// social links, feature flags) so they never require a code change.
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  subject   String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([isRead, createdAt])
+  @@map("contact_messages")
+}

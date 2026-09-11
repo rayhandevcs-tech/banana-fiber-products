@@ -1,0 +1,133 @@
+{
+  "brand": {
+    "name": "Banana Fiber",
+    "tagline": "Handmade with Nature. Made for Life.",
+    "shortDescription": "Beautiful handmade products crafted from natural banana fiber by skilled rural artisans of Bangladesh."
+  },
+  "nav": {
+    "home": "Home",
+    "shop": "Shop",
+    "categories": "Categories",
+    "about": "About Us",
+    "howItsMade": "How It's Made",
+    "contact": "Contact",
+    "trackOrder": "Track Order",
+    "menu": "Menu",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "mainNavigation": "Main navigation",
+    "skipToContent": "Skip to main content"
+  },
+  "search": {
+    "label": "Search products",
+    "placeholder": "Search for baskets, bags, mats…",
+    "submit": "Search",
+    "open": "Open search",
+    "close": "Close search",
+    "clear": "Clear search"
+  },
+  "cart": {
+    "title": "Cart",
+    "open": "Open cart",
+    "itemCount": "{count, plural, =0 {Cart is empty} one {# item} other {# items}}",
+    "empty": "Your cart is empty"
+  },
+  "language": {
+    "label": "Language",
+    "switchTo": "Switch to {language}",
+    "current": "Current language: {language}"
+  },
+  "actions": {
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "shopNow": "Shop Now",
+    "exploreProducts": "Explore Products",
+    "viewDetails": "View Details",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "retry": "Try Again",
+    "close": "Close",
+    "viewAll": "View All",
+    "loadMore": "Load More"
+  },
+  "stock": {
+    "inStock": "In Stock",
+    "lowStock": "Only a few left",
+    "outOfStock": "Out of Stock",
+    "unitsLeft": "{count} left"
+  },
+  "product": {
+    "price": "Price",
+    "discount": "Discount",
+    "save": "Save {amount}",
+    "material": "Material",
+    "madeIn": "Made in",
+    "craftType": "Craft type",
+    "handmade": "Handmade",
+    "bangladesh": "Bangladesh",
+    "quantity": "Quantity",
+    "increase": "Increase quantity",
+    "decrease": "Decrease quantity",
+    "naturalVariation": "Each handmade piece may have slight natural variations."
+  },
+  "states": {
+    "loading": "Loading…",
+    "loadingProducts": "Loading products…",
+    "errorTitle": "Something went wrong",
+    "errorBody": "We could not load this right now. Please check your internet connection and try again.",
+    "emptyTitle": "Nothing here yet",
+    "emptyBody": "There is nothing to show on this page right now.",
+    "noProductsTitle": "No products found",
+    "noProductsBody": "We could not find any products matching your search. Try a different word.",
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "The page you are looking for does not exist or has been moved."
+  },
+  "toast": {
+    "success": "Success",
+    "error": "Error",
+    "info": "Information",
+    "warning": "Warning",
+    "dismiss": "Dismiss notification"
+  },
+  "footer": {
+    "aboutTitle": "About Us",
+    "aboutText": "We are a community of rural artisans in Bangladesh creating beautiful, durable products from natural banana fiber.",
+    "shopTitle": "Shop",
+    "helpTitle": "Help",
+    "contactTitle": "Contact",
+    "faq": "Frequently Asked Questions",
+    "deliveryInfo": "Delivery Information",
+    "returnPolicy": "Return Policy",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "followUs": "Follow Us",
+    "phone": "Phone",
+    "email": "Email",
+    "address": "Address",
+    "addressValue": "Jhenaidah, Khulna Division, Bangladesh",
+    "rights": "All rights reserved.",
+    "madeWith": "Handmade in Bangladesh"
+  },
+  "trust": {
+    "naturalMaterials": "Natural Materials",
+    "handmade": "Handmade by Artisans",
+    "ecoFriendly": "Eco-Friendly",
+    "supportsArtisans": "Supports Rural Artisans",
+    "cashOnDelivery": "Cash on Delivery Available",
+    "deliveryAcrossBangladesh": "Delivery Across Bangladesh"
+  },
+  "common": {
+    "currencySymbol": "৳",
+    "and": "and",
+    "or": "or",
+    "yes": "Yes",
+    "no": "No",
+    "required": "Required",
+    "optional": "Optional"
+  }
+}
