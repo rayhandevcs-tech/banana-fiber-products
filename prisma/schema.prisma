@@ -93,6 +93,22 @@ model Product {
   pricePoisha    Int
   discountPoisha Int @default(0) // absolute discount, not a percentage
 
+  // The price the customer actually pays: pricePoisha - discountPoisha.
+  //
+  // DATABASE-GENERATED (`GENERATED ALWAYS AS ... STORED`) — never write to it.
+  // Postgres recomputes it on every insert and update, so it cannot drift from
+  // the two columns above the way an application-maintained copy would.
+  //
+  // It exists because the shop's price filter and price sort must work on the
+  // price shown on the card. Prisma can neither filter nor order by an
+  // expression, so without this column "price: low to high" would list a
+  // discounted TK 550 product below an undiscounted TK 560 one.
+  // Optional to Prisma because a generated column is nullable in Postgres and
+  // because `create`/`update` must be allowed to omit it — the database is the
+  // only thing that ever supplies its value. It is read for `where` and
+  // `orderBy` only; prices are always DISPLAYED from pricePoisha/discountPoisha.
+  effectivePricePoisha Int?
+
   // -- Inventory ------------------------------------------------------------
   // `stock` is the running total; StockMovement is the audit trail that
   // explains how it got there. The two are written together in one
@@ -124,6 +140,9 @@ model Product {
   @@index([categoryId, isActive, deletedAt])
   @@index([isFeatured, isActive, deletedAt])
   @@index([deletedAt])
+  // The storefront predicate. Every shop query filters on exactly these two
+  // columns and most order by price, so this covers the default listing.
+  @@index([isActive, deletedAt, effectivePricePoisha])
   @@map("products")
 }
 

@@ -1,8 +1,11 @@
 import 'server-only';
 
+import type { Prisma } from '@/generated/prisma/client';
+
 import { db } from '@/server/db/client';
 import { fallbackProductImage, placeholderImages } from '@/config/images';
 import type { CategoryCardData, ProductCardData, ImageAsset } from '@/types/content';
+import { PAGE_SIZE, type ShopQuery, type SortOption } from '@/lib/shop/searchParams';
 
 /**
  * Catalogue reads for customer-facing pages.
@@ -39,15 +42,17 @@ function toImageAsset(
   };
 }
 
-export async function getFeaturedProducts(limit = 8): Promise<ProductCardData[]> {
-  const products = await db.product.findMany({
-    where: { isFeatured: true, isActive: true, deletedAt: null },
-    include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } },
-    orderBy: [{ stock: 'desc' }, { createdAt: 'desc' }],
-    take: limit,
-  });
+/** A product row with the one image the card needs. */
+type ProductRow = Prisma.ProductGetPayload<{ include: { images: true } }>;
 
-  return products.map((product) => ({
+/**
+ * The single place a database row becomes a product card.
+ *
+ * Shared by the homepage's featured rail and the shop listing so the two can
+ * never disagree about what a card shows.
+ */
+function toProductCardData(product: ProductRow): ProductCardData {
+  return {
     id: product.id,
     slug: product.slug,
     sku: product.sku,
@@ -64,7 +69,40 @@ export async function getFeaturedProducts(limit = 8): Promise<ProductCardData[]>
       en: product.nameEn,
       bn: product.nameBn,
     }),
-  }));
+  };
+}
+
+/** A category row with its active-product count. */
+type CategoryRow = Prisma.CategoryGetPayload<{
+  include: { _count: { select: { products: true } } };
+}>;
+
+/** The single place a category row becomes a category card. */
+function toCategoryCardData(category: CategoryRow): CategoryCardData {
+  return {
+    slug: category.slug,
+    name: { en: category.nameEn, bn: category.nameBn },
+    productCount: category._count.products,
+    image: {
+      src:
+        category.imageUrl ??
+        categoryPlaceholder[category.slug] ??
+        fallbackProductImage.src,
+      alt: { en: category.nameEn, bn: category.nameBn },
+      isPlaceholder: !category.imageUrl,
+    },
+  };
+}
+
+export async function getFeaturedProducts(limit = 8): Promise<ProductCardData[]> {
+  const products = await db.product.findMany({
+    where: { isFeatured: true, isActive: true, deletedAt: null },
+    include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } },
+    orderBy: [{ stock: 'desc' }, { createdAt: 'desc' }],
+    take: limit,
+  });
+
+  return products.map(toProductCardData);
 }
 
 export async function getFeaturedCategories(limit = 6): Promise<CategoryCardData[]> {
@@ -79,17 +117,153 @@ export async function getFeaturedCategories(limit = 6): Promise<CategoryCardData
     },
   });
 
-  return categories.map((category) => ({
-    slug: category.slug,
-    name: { en: category.nameEn, bn: category.nameBn },
-    productCount: category._count.products,
-    image: {
-      src:
-        category.imageUrl ??
-        categoryPlaceholder[category.slug] ??
-        fallbackProductImage.src,
-      alt: { en: category.nameEn, bn: category.nameBn },
-      isPlaceholder: !category.imageUrl,
+  return categories.map(toCategoryCardData);
+}
+
+/* ------------------------------------------------------------------------ *
+ * SHOP / PRODUCT DISCOVERY (Sprint 3)
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Every shop query is filtered, sorted, counted and paginated by PostgreSQL.
+ * The browser never receives more than one page of products, and no catalogue
+ * array is ever held in JavaScript to be filtered or sorted afterwards.
+ */
+
+/** The predicate every storefront query starts from. */
+const STOREFRONT: Prisma.ProductWhereInput = { isActive: true, deletedAt: null };
+
+/**
+ * Ordering for each customer-facing sort.
+ *
+ * Every list ends with `id: 'asc'`. Without a unique tiebreaker, rows that
+ * compare equal (two products at the same price, say) may come back in a
+ * different order on each query, which makes a product appear twice on page 1
+ * and never on page 2. Pagination is only coherent over a total order.
+ *
+ * Price sorts use `effectivePricePoisha` — the database-computed
+ * price-after-discount — so the order matches the prices printed on the cards.
+ */
+const ORDER_BY: Record<SortOption, Prisma.ProductOrderByWithRelationInput[]> = {
+  featured: [{ isFeatured: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+  newest: [{ createdAt: 'desc' }, { id: 'asc' }],
+  'price-low': [{ effectivePricePoisha: 'asc' }, { id: 'asc' }],
+  'price-high': [{ effectivePricePoisha: 'desc' }, { id: 'asc' }],
+  'name-asc': [{ nameEn: 'asc' }, { id: 'asc' }],
+};
+
+/**
+ * Translate discovery state into a Prisma `where`.
+ *
+ * Used by both the page query and the count, so a product can never be
+ * counted but not listed.
+ */
+function buildWhere(query: ShopQuery): Prisma.ProductWhereInput {
+  const where: Prisma.ProductWhereInput = { ...STOREFRONT };
+
+  if (query.category) {
+    where.category = { slug: query.category, isActive: true };
+  }
+
+  if (query.search) {
+    // Both languages plus the SKU: a customer may type "bag", "ব্যাগ" or read
+    // a code off a printed list. `insensitive` is a no-op for Bengali, which
+    // has no letter case, and necessary for English.
+    where.OR = [
+      { nameEn: { contains: query.search, mode: 'insensitive' } },
+      { nameBn: { contains: query.search } },
+      { shortDescEn: { contains: query.search, mode: 'insensitive' } },
+      { shortDescBn: { contains: query.search } },
+      { sku: { contains: query.search, mode: 'insensitive' } },
+    ];
+  }
+
+  if (query.minPricePoisha !== undefined || query.maxPricePoisha !== undefined) {
+    // Filtered on the discounted price, so the range matches what the customer
+    // sees on the card rather than a pre-discount number they never read.
+    where.effectivePricePoisha = {
+      ...(query.minPricePoisha !== undefined && { gte: query.minPricePoisha }),
+      ...(query.maxPricePoisha !== undefined && { lte: query.maxPricePoisha }),
+    };
+  }
+
+  if (query.availability === 'in-stock') where.stock = { gt: 0 };
+  if (query.availability === 'out-of-stock') where.stock = { lte: 0 };
+
+  return where;
+}
+
+export interface ShopResult {
+  products: ProductCardData[];
+  /** Total matching the filters, not the number on this page. */
+  total: number;
+  page: number;
+  pageCount: number;
+  pageSize: number;
+}
+
+/**
+ * One page of the catalogue.
+ *
+ * Two queries — the page and the total — issued together. The total is what
+ * lets the page report "24 products" and render pagination without fetching
+ * anything it will not display.
+ */
+export async function searchProducts(query: ShopQuery): Promise<ShopResult> {
+  const where = buildWhere(query);
+
+  const [total, rows] = await Promise.all([
+    db.product.count({ where }),
+    db.product.findMany({
+      where,
+      include: { images: { orderBy: { sortOrder: 'asc' }, take: 1 } },
+      orderBy: ORDER_BY[query.sort],
+      skip: (query.page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+  ]);
+
+  return {
+    products: rows.map(toProductCardData),
+    total,
+    page: query.page,
+    pageCount: Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    pageSize: PAGE_SIZE,
+  };
+}
+
+/** Every active category, for the shop's category filter. */
+export async function getShopCategories(): Promise<CategoryCardData[]> {
+  const categories = await db.category.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' },
+    include: {
+      _count: {
+        select: { products: { where: { isActive: true, deletedAt: null } } },
+      },
     },
-  }));
+  });
+
+  return categories.map(toCategoryCardData);
+}
+
+/**
+ * The cheapest and dearest prices in the catalogue, in poisha.
+ *
+ * Used to label the price inputs with the real range, so a customer is not
+ * left guessing what numbers are worth typing. Deliberately computed over the
+ * whole catalogue rather than the current results: a range that moved every
+ * time a filter changed would be a moving target.
+ */
+export async function getPriceBounds(): Promise<{ min: number; max: number }> {
+  const result = await db.product.aggregate({
+    where: STOREFRONT,
+    _min: { effectivePricePoisha: true },
+    _max: { effectivePricePoisha: true },
+  });
+
+  return {
+    min: result._min.effectivePricePoisha ?? 0,
+    max: result._max.effectivePricePoisha ?? 0,
+  };
 }
