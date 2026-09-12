@@ -5,6 +5,7 @@ import { hasLocale } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { routing } from '@/lib/i18n/routing';
+import { siteUrl } from '@/config/site';
 import type { Locale } from '@/config/locales';
 import { SiteShell } from '@/components/layout/SiteShell';
 
@@ -28,9 +29,7 @@ export async function generateMetadata({
       template: `%s | ${t('name')}`,
     },
     description: t('shortDescription'),
-    metadataBase: new URL(
-      process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
-    ),
+    metadataBase: siteUrl,
     // Each locale is an indexable URL with a declared alternate, so search
     // engines and social crawlers resolve the right language.
     alternates: {
