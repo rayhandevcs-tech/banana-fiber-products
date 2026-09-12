@@ -387,5 +387,45 @@
     "successTotal": "Total",
     "successMethod": "Delivery method",
     "continueShopping": "Continue shopping"
+  },
+  "pending": {
+    "badge": "Coming soon",
+    "note": "This page is still being prepared. Everything in the shop is ready to browse and order in the meantime.",
+    "shopCta": "Go to the shop",
+    "homeCta": "Back to home",
+    "pages": {
+      "about": {
+        "title": "About Us",
+        "body": "The story of the workshop, the families who weave with us, and how the business began."
+      },
+      "contact": {
+        "title": "Contact",
+        "body": "Our phone number, workshop address and opening hours will be listed here."
+      },
+      "how-its-made": {
+        "title": "How It's Made",
+        "body": "A step-by-step look at how a banana stem becomes a finished product."
+      },
+      "track-order": {
+        "title": "Track Order",
+        "body": "Checking an order with your phone number and order number is not available yet. Please call us and we will check it for you."
+      },
+      "faq": {
+        "title": "Frequently Asked Questions",
+        "body": "Answers to the questions customers ask us most often."
+      },
+      "delivery-information": {
+        "title": "Delivery Information",
+        "body": "Delivery areas, charges and how long each one takes. The charge for your address is shown at checkout."
+      },
+      "return-policy": {
+        "title": "Return Policy",
+        "body": "What can be returned or exchanged, and how long you have to do it."
+      },
+      "privacy-policy": {
+        "title": "Privacy Policy",
+        "body": "What we record when you place an order, and what we use it for."
+      }
+    }
   }
 }

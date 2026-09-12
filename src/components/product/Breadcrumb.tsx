@@ -56,7 +56,11 @@ export function Breadcrumb({
               {item.href && !isLast ? (
                 <Link
                   href={item.href}
-                  className="rounded text-ink-500 transition-colors hover:text-primary-600 focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:outline-none"
+                  // The text itself is only 22px tall, which is a small thing
+                  // to hit with a thumb. The `after` overlay raises the touch
+                  // target to 44px without taking any layout space, so the
+                  // crumb trail keeps its height and spacing exactly.
+                  className="relative rounded text-ink-500 transition-colors after:absolute after:inset-x-0 after:top-1/2 after:h-11 after:-translate-y-1/2 after:content-[''] hover:text-primary-600 focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:outline-none"
                 >
                   {item.label}
                 </Link>
