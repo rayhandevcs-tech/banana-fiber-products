@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "Banana Fiber",
+    "name": "EcoFiber",
     "tagline": "Handmade with Nature. Made for Life.",
     "shortDescription": "Beautiful handmade products crafted from natural banana fiber by skilled rural artisans of Bangladesh."
   },
@@ -112,7 +112,7 @@
     "phone": "Phone",
     "email": "Email",
     "address": "Address",
-    "addressValue": "Jhenaidah, Khulna Division, Bangladesh",
+    "addressValue": "Muktagacha, Mymensingh, Bangladesh",
     "rights": "All rights reserved.",
     "madeWith": "Handmade in Bangladesh"
   },
@@ -171,7 +171,7 @@
     "howStep4Alt": "A finished woven basket ready for delivery",
     "storyEyebrow": "Our Community",
     "storyTitle": "Made by people, not factories",
-    "storyBody": "Our workshop is in Jhenaidah, where most of the weaving is done at home between other work. Artisans are paid per finished piece at a rate agreed before the work starts, and they keep their own hours.",
+    "storyBody": "Our workshop is in Muktagacha, Mymensingh, where most of the weaving is done at home between other work. Artisans are paid per finished piece at a rate agreed before the work starts, and they keep their own hours.",
     "storyBodySecondary": "We are a small operation and we would rather grow slowly than change how any of that works.",
     "storyImageAlt": "An artisan weaving a banana fiber basket by hand",
     "storyPlaceholderNote": "Placeholder copy. To be replaced with verified information about our community.",

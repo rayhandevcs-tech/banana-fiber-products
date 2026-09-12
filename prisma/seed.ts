@@ -407,8 +407,8 @@ async function main() {
       category: 'mats-and-rugs',
       nameEn: 'Handwoven Floor Mat (Large)',
       nameBn: 'হাতে বোনা মেঝের মাদুর (বড়)',
-      shortDescEn: 'A large mat woven in a traditional Jhenaidah pattern.',
-      shortDescBn: 'ঝিনাইদহের ঐতিহ্যবাহী নকশায় বোনা বড় মাদুর।',
+      shortDescEn: 'A large mat woven in a traditional Mymensingh pattern.',
+      shortDescBn: 'ময়মনসিংহের ঐতিহ্যবাহী নকশায় বোনা বড় মাদুর।',
       descriptionEn:
         'Three weavers work about four days on a mat this size. The chevron pattern is counted by eye rather than marked out, so no two mats are identical. Comfortable underfoot and cool to sit on through the hot months.',
       descriptionBn:
@@ -662,9 +662,32 @@ async function main() {
   let photographed = 0;
   for (const p of productData) {
     const { category, isActive, ...fields } = p;
+
+    // Corrected copy has to reach a database that was seeded earlier — with
+    // `update: {}` a fixed description stayed stale forever.
+    //
+    // Text only, and deliberately so: `stock` is decremented by real orders and
+    // `pricePoisha` is what past orders were priced from, so neither is the
+    // seed's to overwrite. Nor are `isActive`/`isFeatured`, which the admin
+    // screens will own.
+    const copy = {
+      nameEn: fields.nameEn,
+      nameBn: fields.nameBn,
+      shortDescEn: fields.shortDescEn,
+      shortDescBn: fields.shortDescBn,
+      descriptionEn: fields.descriptionEn,
+      descriptionBn: fields.descriptionBn,
+      materialsEn: fields.materialsEn,
+      materialsBn: fields.materialsBn,
+      careEn: fields.careEn,
+      careBn: fields.careBn,
+      dimensionsEn: fields.dimensionsEn,
+      dimensionsBn: fields.dimensionsBn,
+    };
+
     const product = await db.product.upsert({
       where: { sku: p.sku },
-      update: {},
+      update: copy,
       create: {
         ...fields,
         isActive: isActive ?? true,
@@ -732,21 +755,28 @@ async function main() {
   // Settings
   // -------------------------------------------------------------------------
   const settings: Array<{ key: string; value: unknown }> = [
-    { key: 'shop.nameEn', value: 'Banana Fiber' },
-    { key: 'shop.nameBn', value: 'কলাগাছের তন্তু' },
+    { key: 'shop.nameEn', value: 'EcoFiber' },
+    { key: 'shop.nameBn', value: 'ইকোফাইবার' },
     { key: 'shop.phone', value: '01712345678' },
-    { key: 'shop.email', value: 'hello@bananafiber.com.bd' },
-    { key: 'shop.addressEn', value: 'Jhenaidah, Khulna Division, Bangladesh' },
-    { key: 'shop.addressBn', value: 'ঝিনাইদহ, খুলনা বিভাগ, বাংলাদেশ' },
+    { key: 'shop.email', value: 'hello@ecofiber.com.bd' },
+    { key: 'shop.addressEn', value: 'Muktagacha, Mymensingh, Bangladesh' },
+    { key: 'shop.addressBn', value: 'মুক্তাগাছা, ময়মনসিংহ, বাংলাদেশ' },
     { key: 'shop.facebook', value: 'https://facebook.com/' },
     { key: 'shop.instagram', value: 'https://instagram.com/' },
     { key: 'order.lowStockAlertEnabled', value: true },
   ];
 
+  // Written on every run, not just the first: with `update: {}` a corrected
+  // default — the shop's name, address or email — would never reach a database
+  // that had already been seeded once.
+  //
+  // Safe while the seed is the only writer. When the admin settings screen
+  // lands (Sprint 11) it becomes the owner of these rows, and this must go back
+  // to leaving an edited value alone.
   for (const s of settings) {
     await db.setting.upsert({
       where: { key: s.key },
-      update: {},
+      update: { value: s.value as never },
       create: { key: s.key, value: s.value as never },
     });
   }

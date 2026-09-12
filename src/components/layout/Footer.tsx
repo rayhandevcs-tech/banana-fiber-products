@@ -1,5 +1,7 @@
 import { useTranslations } from 'next-intl';
-import { Phone, Mail, MapPin, Leaf } from 'lucide-react';
+import { Phone, Mail, MapPin } from 'lucide-react';
+
+import { BrandMark } from './BrandMark';
 
 import { Link } from '@/lib/i18n/routing';
 import { FacebookIcon, InstagramIcon } from '@/components/icons/SocialIcons';
@@ -38,7 +40,7 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2">
-              <Leaf className="h-6 w-6 shrink-0" aria-hidden="true" />
+              <BrandMark className="h-6 w-6" mono />
               <span className="text-lg font-bold text-white">
                 {tBrand('name')}
               </span>
@@ -130,7 +132,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="mailto:hello@bananafiber.com.bd"
+                  href="mailto:hello@ecofiber.com.bd"
                   className="flex min-h-10 items-center gap-2 transition-colors hover:text-white"
                 >
                   <Mail className="h-4 w-4 shrink-0" aria-hidden="true" />

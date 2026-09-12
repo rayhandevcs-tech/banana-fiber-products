@@ -13,6 +13,21 @@ export const routing = defineRouting({
   locales,
   defaultLocale,
   localePrefix: 'always',
+  /**
+   * Bengali on arrival, whatever the browser asks for.
+   *
+   * Left on, next-intl negotiates the first visit against `Accept-Language`,
+   * so a phone set to English opened the English site even though the shop is
+   * Bangladeshi and Bengali is the default. Off, everyone lands on /bn and
+   * chooses for themselves.
+   *
+   * The trade-off, measured rather than assumed: this also stops the
+   * NEXT_LOCALE cookie from steering the bare "/" redirect, so someone who
+   * switched to English and later opens "/" again lands on Bengali. Only that
+   * one entry point is affected — the switcher still works, every /en URL
+   * still serves English, and the cookie still keeps them there as they browse.
+   */
+  localeDetection: false,
   localeCookie: {
     name: 'NEXT_LOCALE',
     maxAge: 60 * 60 * 24 * 365, // remember the choice for a year
