@@ -4,12 +4,20 @@ import { SearchX } from 'lucide-react';
 import { Link } from '@/lib/i18n/routing';
 import { Section, EmptyState } from '@/components/ui';
 import { SiteShell } from '@/components/layout/SiteShell';
-import { resolveRequestLocale } from '@/lib/i18n/resolveRequestLocale';
+import { defaultLocale } from '@/config/locales';
+import messages from '../../messages/bn.json';
 
 import './globals.css';
 
 /**
- * THE 404 PAGE.
+ * THE ROOT 404 — for paths the middleware never touches.
+ *
+ * Almost nobody reaches this file. The next-intl middleware redirects every
+ * localisable path into a locale segment, so a mistyped URL lands on
+ * `[locale]/not-found.tsx` with the right language. What is left here is the
+ * paths the middleware matcher skips — anything containing a dot
+ * (`/wp-login.php`, `/favicon.ico`) and `/api` — which is crawlers and
+ * scanners, not customers.
  *
  * Why this lives at the root rather than under [locale]:
  *
@@ -21,37 +29,30 @@ import './globals.css';
  * builds its own document via the shared <SiteShell> — the same shell the rest
  * of the site uses, so header, footer, fonts and styling stay identical.
  *
- * Locale is resolved from the NEXT_LOCALE cookie that the next-intl middleware
- * writes on every request, falling back to Accept-Language and then to the
- * default. A first-time visitor who lands directly on a broken link before any
- * cookie exists is served by the Accept-Language step.
+ * WHY IT IS FIXED TO THE DEFAULT LOCALE, and must stay that way:
+ *
+ * It used to pick the language from the NEXT_LOCALE cookie and Accept-Language.
+ * That was one `cookies()` call — and because a root `not-found.tsx` sits in
+ * the render tree of EVERY route, that single call opted the entire site out
+ * of static rendering. Nothing was prerendered; the homepage, the shop and all
+ * sixteen content pages were re-rendered from the database on every request.
+ * Removing it took the build from 0 prerendered pages to 67.
+ *
+ * So: no cookies, no headers, no request reads of any kind in this file.
+ * A crawler gets Bengali, which is the site's default language anyway.
  */
+export const metadata: Metadata = {
+  title: messages.states.notFoundTitle,
+  description: messages.states.notFoundBody,
+  // A 404 must never be indexed, whatever status the crawler sees.
+  robots: { index: false, follow: false },
+};
 
-/** The English catalogue is the canonical shape for both languages. */
-type Messages = typeof import('../../messages/en.json');
-
-export async function generateMetadata(): Promise<Metadata> {
-  const locale = await resolveRequestLocale();
-  const messages: Messages = (await import(`../../messages/${locale}.json`))
-    .default;
-
-  return {
-    title: messages.states.notFoundTitle,
-    description: messages.states.notFoundBody,
-    // A 404 must never be indexed, whatever status the crawler sees.
-    robots: { index: false, follow: false },
-  };
-}
-
-export default async function NotFound() {
-  const locale = await resolveRequestLocale();
-  const messages: Messages = (await import(`../../messages/${locale}.json`))
-    .default;
-
+export default function NotFound() {
   const { states, nav } = messages;
 
   return (
-    <SiteShell locale={locale} messages={messages}>
+    <SiteShell locale={defaultLocale} messages={messages}>
       <Section spacing="lg">
         <EmptyState
           icon={<SearchX className="h-8 w-8" />}
@@ -62,7 +63,7 @@ export default async function NotFound() {
             // HTML and breaks keyboard activation.
             <Link
               href="/"
-              locale={locale}
+              locale={defaultLocale}
               className="inline-flex h-12 items-center justify-center rounded-lg bg-primary-500 px-5 font-semibold text-white transition-colors hover:bg-primary-600"
             >
               {nav.home}
