@@ -16,8 +16,9 @@ import { cn } from '@/lib/utils/cn';
  * visitor stays exactly where they were — the Next.js router re-renders the
  * server components with the new messages and the URL updates in place.
  *
- * The choice is persisted in the NEXT_LOCALE cookie (configured in routing.ts)
- * and honoured server-side on the next visit, so it survives a refresh.
+ * The choice lives in the URL itself — every path is locale-prefixed — so it
+ * survives sharing and bookmarking without a cookie (see routing.ts, where the
+ * cookie was removed because it made every page uncacheable).
  */
 export function LanguageSwitcher({
   variant = 'inline',

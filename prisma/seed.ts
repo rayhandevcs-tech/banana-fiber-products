@@ -47,7 +47,8 @@ interface Photograph {
 }
 
 /**
- * PRODUCT PHOTOGRAPHY, keyed by SKU.
+ * PRODUCT PHOTOGRAPHY, keyed by SKU. First entry is the primary image; any
+ * that follow become the rest of the gallery, in order.
  *
  * Served from /public as staging assets. Cloudinary (Sprint 10) replaces the
  * `url` with a res.cloudinary.com URL and fills in `cloudinaryId`; nothing
@@ -61,82 +62,210 @@ interface Photograph {
  * stand-in — so a real photograph filed there would be mislabelled by the
  * whole application.
  *
- * TEMPORARY, AND NOT ALL EQUAL. Three of these (the gift hamper, the tray set
- * and the tote bag) photograph that one product on its own. The other six are
- * workshop and collection shots showing many items at once; they are in use
- * because the shop asked for every available picture to be shown until real
- * photography exists, not because they identify the product. Their alt text
- * therefore describes the scene truthfully rather than claiming a single item,
- * and each should be replaced as soon as that product is photographed on its
- * own.
+ * Every entry here now photographs its own product against a clean or styled
+ * background. The shop-floor and workshop shots that stood in earlier were
+ * withdrawn: they showed stacked inventory with price tags rather than the
+ * item for sale, and two of them carried another business's labels. A product
+ * that has no photograph of its own shows placeholder artwork instead, which
+ * at least reads as a drawing rather than as a misleading photograph.
+ *
+ * The one deliberate exception is the wall plate set, whose second and third
+ * images are room shots showing the pieces hung together. Their alt text says
+ * so.
  */
-const PHOTOGRAPHY_BY_SKU: Record<string, Photograph> = {
-  'BF-GFT-001': {
-    url: '/images/products/artisan-gift-hamper-basket.jpg',
-    altEn:
-      'Handwoven gift hamper basket with a fitted lid and two arched carrying handles, in teal and natural cream stripes',
-    altBn:
-      'ঢাকনা ও দুটি বাঁকানো হাতলসহ হাতে বোনা উপহারের ঝুড়ি, সবুজাভ নীল ও প্রাকৃতিক রঙের ডোরাকাটা নকশা',
-  },
-  'BF-STR-001': {
-    url: '/images/products/nested-storage-tray-set.jpg',
-    altEn:
-      'A nested set of round coiled storage trays in natural fiber, the smaller trays sitting inside the largest',
-    altBn:
-      'প্রাকৃতিক তন্তুর গোল স্টোরেজ ট্রে সেট, ছোট ট্রেগুলো বড়টির ভিতরে সাজানো',
-  },
-  'BF-BAG-001': {
-    url: '/images/products/woven-market-tote-bag.jpg',
-    altEn:
-      'Rectangular handwoven market tote bag in natural straw, with two braided carrying handles',
-    altBn:
-      'প্রাকৃতিক রঙের হাতে বোনা চারকোনা বাজারের টোট ব্যাগ, দুটি বিনুনি করা হাতলসহ',
-  },
+const PHOTOGRAPHY_BY_SKU: Record<string, Photograph[]> = {
+  // --- Baskets ------------------------------------------------------------
+  'BF-BSK-001': [
+    {
+      url: '/images/products/banana-fiber-storage-basket.jpg',
+      altEn:
+        'Round coiled storage basket with a fitted lid, cream fiber banded in red and blue',
+      altBn:
+        'ঢাকনাসহ গোল পাকানো স্টোরেজ ঝুড়ি, ক্রিম রঙের তন্তুতে লাল ও নীল নকশা',
+    },
+  ],
 
-  // --- Workshop and collection shots, standing in until each product is
-  // --- photographed on its own. The alt text describes the whole scene.
-  'BF-BSK-001': {
-    url: '/images/products/banana-fiber-storage-basket.jpg',
-    altEn:
-      'Workshop shelves lined with woven lidded storage containers and round mats',
-    altBn:
-      'কারখানার তাকজুড়ে সাজানো বোনা ঢাকনাওয়ালা পাত্র ও গোল মাদুর',
-  },
-  'BF-MAT-001': {
-    url: '/images/products/handwoven-floor-mat-large.jpg',
-    altEn:
-      'Stacks of thick coiled natural fiber mats in several sizes, with woven bowls beside them',
-    altBn:
-      'নানা মাপের মোটা পাকানো প্রাকৃতিক তন্তুর মাদুরের স্তূপ, পাশে বোনা বাটি',
-  },
-  'BF-STR-002': {
-    url: '/images/products/laundry-hamper-with-lid.jpg',
-    altEn:
-      'Large open woven baskets among assorted handwoven mats and household items',
-    altBn:
-      'বড় বোনা ঝুড়ি, সাথে নানা রকম হাতে বোনা মাদুর ও ঘরের জিনিসপত্র',
-  },
-  'BF-BAG-002': {
-    url: '/images/products/small-shoulder-bag.jpg',
-    altEn:
-      'Woven shoulder bags hanging in a row at the workshop, with round mirrors above them',
-    altBn:
-      'কারখানায় সারি করে ঝোলানো বোনা কাঁধব্যাগ, উপরে গোল আয়না',
-  },
-  'BF-DEC-001': {
-    url: '/images/products/banana-fiber-table-runner.jpg',
-    altEn:
-      'Rolled natural fiber runners laid out with a tote bag, a pouch and bundles of twine',
-    altBn:
-      'গুটিয়ে রাখা প্রাকৃতিক তন্তুর রানার, সাথে টোট ব্যাগ, পাউচ ও সুতার বান্ডিল',
-  },
-  'BF-GFT-002': {
-    url: '/images/products/coaster-set-of-six.jpg',
-    altEn:
-      'Small round lidded containers and woven coasters in many colours, displayed together',
-    altBn:
-      'নানা রঙের ছোট গোল ঢাকনাওয়ালা পাত্র ও বোনা কোস্টার, একসাথে সাজানো',
-  },
+  // --- Bags ---------------------------------------------------------------
+  'BF-BAG-001': [
+    {
+      url: '/images/products/woven-market-tote-bag.jpg',
+      altEn:
+        'Rectangular handwoven market tote bag in natural straw, with two braided carrying handles',
+      altBn:
+        'প্রাকৃতিক রঙের হাতে বোনা চারকোনা বাজারের টোট ব্যাগ, দুটি বিনুনি করা হাতলসহ',
+    },
+  ],
+  'BF-BAG-002': [
+    {
+      url: '/images/products/small-shoulder-bag.jpg',
+      altEn:
+        'Small woven handbag held by its braided handles, embroidered with pink, white and purple flowers',
+      altBn:
+        'বিনুনি হাতল ধরে তোলা ছোট বোনা হাতব্যাগ, গোলাপি, সাদা ও বেগুনি ফুলের সূচিকর্মসহ',
+    },
+  ],
+  'BF-BAG-003': [
+    {
+      url: '/images/products/wildflower-embroidered-tote.jpg',
+      altEn:
+        'Woven straw tote bag covered in hand-embroidered wildflowers, standing on a wooden stool',
+      altBn:
+        'কাঠের টুলের উপর রাখা বোনা খড়ের টোট ব্যাগ, সারা গায়ে হাতে করা বুনো ফুলের সূচিকর্ম',
+    },
+  ],
+  'BF-BAG-004': [
+    {
+      url: '/images/products/daisy-embroidered-beach-basket.jpg',
+      altEn:
+        'Fan-shaped woven basket bag with leather handles and a row of embroidered lilac daisies',
+      altBn:
+        'চামড়ার হাতলসহ পাখার আকৃতির বোনা ঝুড়ি-ব্যাগ, সামনে সারিবদ্ধ হালকা বেগুনি ডেইজি ফুলের সূচিকর্ম',
+    },
+  ],
+  'BF-BAG-005': [
+    {
+      url: '/images/products/hibiscus-embroidered-shopper.jpg',
+      altEn:
+        'Flat-bottomed woven shopper basket with a bright pink lining and a large embroidered hibiscus',
+      altBn:
+        'সমতল তলার বোনা শপিং ঝুড়ি, ভিতরে উজ্জ্বল গোলাপি আস্তরণ ও বাইরে বড় জবা ফুলের সূচিকর্ম',
+    },
+  ],
+  'BF-BAG-006': [
+    {
+      url: '/images/products/crescent-ring-handle-bag.jpg',
+      altEn:
+        'Four crescent-shaped woven bags with round wooden handles, each embroidered with a different flower spray',
+      altBn:
+        'গোল কাঠের হাতলসহ চারটি অর্ধচন্দ্রাকৃতি বোনা ব্যাগ, প্রতিটিতে আলাদা ফুলের সূচিকর্ম',
+    },
+  ],
+  'BF-BAG-007': [
+    {
+      url: '/images/products/blossom-bucket-basket-bag.jpg',
+      altEn:
+        'Round woven bucket bag with a pink braided handle, a cotton lining and a band of embroidered flowers',
+      altBn:
+        'গোলাপি বিনুনি হাতলসহ গোল বোনা বালতি-ব্যাগ, ভিতরে সুতির আস্তরণ ও চারদিকে ফুলের সূচিকর্মের পাড়',
+    },
+  ],
+  'BF-BAG-008': [
+    {
+      url: '/images/products/pink-daisy-beach-tote.jpg',
+      altEn:
+        'A woman carrying a large woven beach tote embroidered with pink daisies over her shoulder',
+      altBn:
+        'কাঁধে বড় বোনা সৈকত টোট ব্যাগ নিয়ে হাঁটছেন একজন নারী, ব্যাগে গোলাপি ডেইজি ফুলের সূচিকর্ম',
+    },
+  ],
+
+  // --- Storage ------------------------------------------------------------
+  'BF-STR-001': [
+    {
+      url: '/images/products/nested-storage-tray-set-lidded.jpg',
+      altEn:
+        'Three round lidded storage boxes in three sizes, each lid finished with a woven loop and coloured strands',
+      altBn:
+        'তিন মাপের তিনটি গোল ঢাকনাওয়ালা স্টোরেজ বাক্স, প্রতিটি ঢাকনায় বোনা আংটা ও রঙিন তন্তু',
+    },
+    {
+      url: '/images/products/nested-storage-tray-set.jpg',
+      altEn:
+        'The same set shown open, the rope-coiled trays stacked one inside the other',
+      altBn:
+        'একই সেট খোলা অবস্থায়, পাকানো দড়ির ট্রেগুলো একটির ভিতরে আরেকটি সাজানো',
+    },
+  ],
+  'BF-STR-002': [
+    {
+      url: '/images/products/laundry-hamper-with-lid.jpg',
+      altEn:
+        'Tall coiled laundry hamper with a fitted lid and a row of fiber tassels around its widest point',
+      altBn:
+        'ঢাকনাসহ লম্বা পাকানো কাপড়ের ঝুড়ি, সবচেয়ে চওড়া জায়গায় সারিবদ্ধ তন্তুর ঝালর',
+    },
+  ],
+  'BF-STR-003': [
+    {
+      url: '/images/products/diamond-pattern-lidded-basket.jpg',
+      altEn:
+        'Coiled lidded basket in tan, cream and grey, worked in a diamond pattern, with a woven knob on the lid',
+      altBn:
+        'বাদামি, ক্রিম ও ধূসর রঙের পাকানো ঢাকনাওয়ালা ঝুড়ি, হীরক নকশা ও ঢাকনায় বোনা হাতল',
+    },
+  ],
+
+  // --- Home decor ---------------------------------------------------------
+  'BF-DEC-003': [
+    {
+      url: '/images/products/embroidered-round-serving-tray.jpg',
+      altEn:
+        'Round woven serving tray with a raised rim bound in yellow, embroidered with a yellow mimosa sprig',
+      altBn:
+        'হলুদ পাড় বাঁধানো উঁচু কিনারার গোল বোনা পরিবেশন ট্রে, হলুদ ফুলের ডাল সূচিকর্ম করা',
+    },
+  ],
+  'BF-DEC-004': [
+    {
+      url: '/images/products/woven-wall-plate-set.jpg',
+      altEn:
+        'Five round woven wall plates laid on white cloth, each worked with a different plant and sun motif',
+      altBn:
+        'সাদা কাপড়ের উপর পাঁচটি গোল বোনা দেয়াল-থালা, প্রতিটিতে আলাদা গাছ ও সূর্যের নকশা',
+    },
+    {
+      url: '/images/products/woven-wall-plate-set-styled.jpg',
+      altEn:
+        'Room view: a cluster of patterned woven wall plates hung together above a sofa',
+      altBn:
+        'ঘরের দৃশ্য: সোফার উপরে একসাথে ঝোলানো নকশাদার বোনা দেয়াল-থালার সমাহার',
+    },
+    {
+      url: '/images/products/woven-wall-basket-display.jpg',
+      altEn:
+        'Room view: woven wall plates and shallow baskets arranged around a rope-framed mirror',
+      altBn:
+        'ঘরের দৃশ্য: দড়ির ফ্রেমের আয়নাকে ঘিরে সাজানো বোনা দেয়াল-থালা ও অগভীর ঝুড়ি',
+    },
+  ],
+  'BF-DEC-005': [
+    {
+      url: '/images/products/embroidered-bread-basket.jpg',
+      altEn:
+        'Rectangular woven bread basket with a cotton liner and red and blue flowers embroidered along the rim',
+      altBn:
+        'সুতির আস্তরণসহ চারকোনা বোনা রুটির ঝুড়ি, কিনারা জুড়ে লাল ও নীল ফুলের সূচিকর্ম',
+    },
+  ],
+
+  // --- Gift items ---------------------------------------------------------
+  'BF-GFT-001': [
+    {
+      url: '/images/products/artisan-gift-hamper-basket.jpg',
+      altEn:
+        'Handwoven gift hamper basket with a fitted lid and two arched carrying handles, in teal and natural cream stripes',
+      altBn:
+        'ঢাকনা ও দুটি বাঁকানো হাতলসহ হাতে বোনা উপহারের ঝুড়ি, সবুজাভ নীল ও প্রাকৃতিক রঙের ডোরাকাটা নকশা',
+    },
+  ],
+  'BF-GFT-002': [
+    {
+      url: '/images/products/coaster-set-of-six.jpg',
+      altEn:
+        'Two round coiled coasters edged with cowrie shells and a fringe of natural fiber',
+      altBn:
+        'কড়ি ও প্রাকৃতিক তন্তুর ঝালর দিয়ে ঘেরা দুটি গোল পাকানো কোস্টার',
+    },
+  ],
+  'BF-GFT-003': [
+    {
+      url: '/images/products/round-lidded-keepsake-box.jpg',
+      altEn:
+        'Round lidded keepsake box in pale fiber, the lid worked in a coloured starburst and the sides in small diamonds',
+      altBn:
+        'ফ্যাকাশে তন্তুর গোল ঢাকনাওয়ালা স্মৃতি-বাক্স, ঢাকনায় রঙিন তারার নকশা ও পাশে ছোট হীরক নকশা',
+    },
+  ],
 };
 
 /**
@@ -656,6 +785,284 @@ async function main() {
       isFeatured: false,
       isActive: false,
     },
+    // -------------------------------------------------------------------
+    // Products added once their own photography arrived.
+    // -------------------------------------------------------------------
+    {
+      slug: 'wildflower-embroidered-tote',
+      sku: 'BF-BAG-003',
+      category: 'bags',
+      nameEn: 'Wildflower Embroidered Tote',
+      nameBn: 'বুনো ফুলের সূচিকর্মের টোট ব্যাগ',
+      shortDescEn: 'A roomy market tote embroidered with a meadow of flowers.',
+      shortDescBn: 'ফুলে ভরা মাঠের সূচিকর্ম করা প্রশস্ত বাজারের ব্যাগ।',
+      descriptionEn:
+        'Every flower on this bag is stitched by hand, one at a time, so no two bags carry quite the same meadow. The body is woven tightly enough to hold a full week of vegetables, and the twisted rope handles are bound where they meet the bag — the point that gives way first on a cheaper bag.',
+      descriptionBn:
+        'এই ব্যাগের প্রতিটি ফুল একটি একটি করে হাতে সেলাই করা, তাই দুটি ব্যাগের নকশা কখনো হুবহু এক হয় না। বুনন এতটাই ঘন যে পুরো সপ্তাহের বাজার অনায়াসে ধরে, আর পাকানো দড়ির হাতল ব্যাগের সাথে জোড়ার জায়গায় শক্ত করে বাঁধা — সস্তা ব্যাগে এই জায়গাটিই আগে ছেঁড়ে।',
+      materialsEn: 'Woven natural fiber, cotton embroidery thread, rope handles',
+      materialsBn: 'বোনা প্রাকৃতিক তন্তু, সুতির সূচিকর্মের সুতা, দড়ির হাতল',
+      careEn: 'Spot clean with a damp cloth. Do not soak the embroidery.',
+      careBn: 'ভেজা কাপড়ে দাগের জায়গা মুছুন। সূচিকর্ম ভেজাবেন না।',
+      dimensionsEn: '38cm wide × 30cm tall, 13cm base',
+      dimensionsBn: '৩৮ সেমি চওড়া × ৩০ সেমি উঁচু, তলা ১৩ সেমি',
+      weightGrams: 420,
+      pricePoisha: taka(1250),
+      discountPoisha: 0,
+      stock: 18,
+      lowStockThreshold: 5,
+      isFeatured: true,
+    },
+    {
+      slug: 'daisy-embroidered-beach-basket',
+      sku: 'BF-BAG-004',
+      category: 'bags',
+      nameEn: 'Daisy Embroidered Basket Bag',
+      nameBn: 'ডেইজি ফুলের সূচিকর্মের ঝুড়ি-ব্যাগ',
+      shortDescEn: 'Fan-shaped basket bag with leather handles.',
+      shortDescBn: 'চামড়ার হাতলসহ পাখার আকৃতির ঝুড়ি-ব্যাগ।',
+      descriptionEn:
+        'The fan shape opens wide at the top, so you can see everything inside without digging. Real leather handles are riveted through the weave rather than stitched to it, which is why they stay put under weight.',
+      descriptionBn:
+        'পাখার আকৃতির কারণে উপরের দিক চওড়া, তাই ভিতরের সবকিছু হাতড়ানো ছাড়াই চোখে পড়ে। আসল চামড়ার হাতল বুননের ভিতর দিয়ে রিভেট করা — সেলাই করা নয় — তাই ভার নিলেও আলগা হয় না।',
+      materialsEn: 'Palm-leaf weave, cotton embroidery, vegetable-tanned leather handles',
+      materialsBn: 'তালপাতার বুনন, সুতির সূচিকর্ম, প্রাকৃতিকভাবে পাকা চামড়ার হাতল',
+      careEn: 'Keep dry. Wipe the leather with a soft dry cloth.',
+      careBn: 'শুকনো রাখুন। চামড়ার অংশ নরম শুকনো কাপড়ে মুছুন।',
+      dimensionsEn: '42cm across the top × 28cm tall',
+      dimensionsBn: 'উপরে ৪২ সেমি চওড়া × ২৮ সেমি উঁচু',
+      weightGrams: 390,
+      pricePoisha: taka(1150),
+      discountPoisha: taka(150),
+      stock: 12,
+      lowStockThreshold: 4,
+      isFeatured: true,
+    },
+    {
+      slug: 'hibiscus-embroidered-shopper',
+      sku: 'BF-BAG-005',
+      category: 'bags',
+      nameEn: 'Hibiscus Embroidered Shopper',
+      nameBn: 'জবা ফুলের সূচিকর্মের শপিং ব্যাগ',
+      shortDescEn: 'Flat-bottomed shopper with a bright lining.',
+      shortDescBn: 'সমতল তলার শপিং ব্যাগ, ভিতরে উজ্জ্বল আস্তরণ।',
+      descriptionEn:
+        'The flat base means it stands up on its own on the floor of a rickshaw or beside the counter, instead of tipping and spilling. Lined throughout in cotton so nothing small slips through the weave.',
+      descriptionBn:
+        'সমতল তলার কারণে রিকশার মেঝেতে বা দোকানের পাশে নিজে নিজেই দাঁড়িয়ে থাকে, কাত হয়ে পড়ে যায় না। ভিতরটা পুরো সুতি কাপড়ে মোড়া, তাই ছোট জিনিস বুননের ফাঁক দিয়ে পড়ে না।',
+      materialsEn: 'Seagrass weave, cotton lining, raffia embroidery',
+      materialsBn: 'সিগ্রাসের বুনন, সুতির আস্তরণ, রাফিয়ার সূচিকর্ম',
+      careEn: 'Wipe with a dry cloth. Air out after carrying anything damp.',
+      careBn: 'শুকনো কাপড়ে মুছুন। ভেজা জিনিস বহনের পর বাতাসে শুকিয়ে নিন।',
+      dimensionsEn: '40cm × 26cm × 14cm',
+      dimensionsBn: '৪০ × ২৬ × ১৪ সেমি',
+      weightGrams: 450,
+      pricePoisha: taka(1380),
+      discountPoisha: 0,
+      stock: 15,
+      lowStockThreshold: 5,
+      isFeatured: false,
+    },
+    {
+      slug: 'crescent-ring-handle-bag',
+      sku: 'BF-BAG-006',
+      category: 'bags',
+      nameEn: 'Crescent Ring Handle Bag',
+      nameBn: 'গোল হাতলের অর্ধচন্দ্র ব্যাগ',
+      shortDescEn: 'Half-moon bag with round wooden handles.',
+      shortDescBn: 'গোল কাঠের হাতলসহ অর্ধচন্দ্রাকৃতি ব্যাগ।',
+      descriptionEn:
+        'Small enough to carry to a wedding, deep enough for a phone, a purse and a folded shawl. The embroidered spray on the front is different on every bag; tell us in the order notes if you would like a particular colour and we will send the closest we have.',
+      descriptionBn:
+        'বিয়েবাড়িতে নেওয়ার মতো ছোট, আবার ফোন, মানিব্যাগ ও ভাঁজ করা ওড়না ধরার মতো গভীর। সামনের ফুলের সূচিকর্ম প্রতিটি ব্যাগে আলাদা; নির্দিষ্ট কোনো রঙ চাইলে অর্ডারের নোটে লিখে দিন, আমরা কাছাকাছিটাই পাঠাব।',
+      materialsEn: 'Kaisa grass weave, cotton embroidery, polished wooden ring handles',
+      materialsBn: 'কাইশা ঘাসের বুনন, সুতির সূচিকর্ম, মসৃণ কাঠের গোল হাতল',
+      careEn: 'Wipe with a dry cloth. Store flat so the crescent keeps its shape.',
+      careBn: 'শুকনো কাপড়ে মুছুন। আকৃতি ঠিক রাখতে সমতলভাবে রাখুন।',
+      dimensionsEn: '30cm wide × 22cm tall',
+      dimensionsBn: '৩০ সেমি চওড়া × ২২ সেমি উঁচু',
+      weightGrams: 280,
+      pricePoisha: taka(980),
+      discountPoisha: 0,
+      stock: 22,
+      lowStockThreshold: 6,
+      isFeatured: false,
+    },
+    {
+      slug: 'blossom-bucket-basket-bag',
+      sku: 'BF-BAG-007',
+      category: 'bags',
+      nameEn: 'Blossom Bucket Basket Bag',
+      nameBn: 'ফুলেল বালতি ঝুড়ি-ব্যাগ',
+      shortDescEn: 'Round lined bag with a braided pink handle.',
+      shortDescBn: 'গোলাপি বিনুনি হাতলসহ গোল আস্তরণযুক্ত ব্যাগ।',
+      descriptionEn:
+        'A round bag that holds its shape whether it is full or empty. The printed cotton lining is stitched in, not glued, so it can be unpicked and washed if it ever needs to be.',
+      descriptionBn:
+        'ভরা হোক বা খালি, এই গোল ব্যাগটি নিজের আকৃতি ধরে রাখে। ছাপা সুতির আস্তরণ সেলাই করা, আঠা দিয়ে লাগানো নয় — তাই প্রয়োজনে খুলে ধুয়ে নেওয়া যায়।',
+      materialsEn: 'Palm-leaf weave, printed cotton lining, braided handle',
+      materialsBn: 'তালপাতার বুনন, ছাপা সুতির আস্তরণ, বিনুনি হাতল',
+      careEn: 'Spot clean only. Do not machine wash.',
+      careBn: 'শুধু দাগের জায়গা পরিষ্কার করুন। মেশিনে ধোবেন না।',
+      dimensionsEn: '26cm diameter × 24cm tall',
+      dimensionsBn: '২৬ সেমি ব্যাস × ২৪ সেমি উঁচু',
+      weightGrams: 260,
+      pricePoisha: taka(860),
+      discountPoisha: 0,
+      stock: 26,
+      lowStockThreshold: 6,
+      isFeatured: false,
+    },
+    {
+      slug: 'pink-daisy-beach-tote',
+      sku: 'BF-BAG-008',
+      category: 'bags',
+      nameEn: 'Pink Daisy Shoulder Tote',
+      nameBn: 'গোলাপি ডেইজি কাঁধ-টোট',
+      shortDescEn: 'Large shoulder tote for a full day out.',
+      shortDescBn: 'সারাদিনের বাইরের জন্য বড় কাঁধ-ব্যাগ।',
+      descriptionEn:
+        'The handles are cut long on purpose, so the bag sits on the shoulder and leaves both hands free. It is the largest bag we make; a change of clothes, a water bottle and a towel all go in together.',
+      descriptionBn:
+        'হাতল ইচ্ছে করেই লম্বা রাখা, যাতে ব্যাগটি কাঁধে বসে এবং দুই হাত খালি থাকে। এটিই আমাদের সবচেয়ে বড় ব্যাগ; এক সেট কাপড়, পানির বোতল আর তোয়ালে একসাথে ধরে যায়।',
+      materialsEn: 'Palm-leaf weave, cotton embroidery, leather shoulder straps',
+      materialsBn: 'তালপাতার বুনন, সুতির সূচিকর্ম, চামড়ার কাঁধের ফিতা',
+      careEn: 'Shake out sand and dust. Keep out of prolonged direct sun.',
+      careBn: 'বালি ও ধুলো ঝেড়ে ফেলুন। দীর্ঘক্ষণ কড়া রোদে রাখবেন না।',
+      dimensionsEn: '48cm wide × 34cm tall',
+      dimensionsBn: '৪৮ সেমি চওড়া × ৩৪ সেমি উঁচু',
+      weightGrams: 520,
+      pricePoisha: taka(1320),
+      discountPoisha: 0,
+      stock: 9,
+      lowStockThreshold: 4,
+      isFeatured: false,
+    },
+    {
+      slug: 'diamond-pattern-lidded-basket',
+      sku: 'BF-STR-003',
+      category: 'storage',
+      nameEn: 'Diamond Pattern Lidded Basket',
+      nameBn: 'হীরক নকশার ঢাকনাওয়ালা ঝুড়ি',
+      shortDescEn: 'Coiled basket with a close-fitting lid.',
+      shortDescBn: 'ঠিকঠাক বসে যাওয়া ঢাকনাসহ পাকানো ঝুড়ি।',
+      descriptionEn:
+        'The lid sits inside the rim rather than on top of it, so it does not slide off when the basket is carried. The diamond pattern is not printed — the dyed fiber is coiled in as the basket is built, which is why it runs right through the wall.',
+      descriptionBn:
+        'ঢাকনাটি কিনারার উপরে না বসে ভিতরে বসে, তাই ঝুড়ি বহন করার সময় সরে যায় না। হীরক নকশা ছাপানো নয় — ঝুড়ি বোনার সময়েই রঙ করা তন্তু পাকিয়ে ঢোকানো হয়, তাই নকশা দেয়ালের ভিতর পর্যন্ত যায়।',
+      materialsEn: 'Coiled natural fiber, plant-dyed strands',
+      materialsBn: 'পাকানো প্রাকৃতিক তন্তু, গাছ-গাছড়ায় রং করা সুতা',
+      careEn: 'Wipe with a dry cloth. Keep away from prolonged damp.',
+      careBn: 'শুকনো কাপড়ে মুছুন। বেশিক্ষণ ভেজা জায়গায় রাখবেন না।',
+      dimensionsEn: '28cm diameter × 26cm tall',
+      dimensionsBn: '২৮ সেমি ব্যাস × ২৬ সেমি উঁচু',
+      weightGrams: 700,
+      pricePoisha: taka(1050),
+      discountPoisha: 0,
+      stock: 13,
+      lowStockThreshold: 5,
+      isFeatured: false,
+    },
+    {
+      slug: 'embroidered-round-serving-tray',
+      sku: 'BF-DEC-003',
+      category: 'home-decor',
+      nameEn: 'Embroidered Round Serving Tray',
+      nameBn: 'সূচিকর্মের গোল পরিবেশন ট্রে',
+      shortDescEn: 'Raised-rim tray for tea and sweets.',
+      shortDescBn: 'চা ও মিষ্টি পরিবেশনের উঁচু কিনারার ট্রে।',
+      descriptionEn:
+        'The rim is high enough that cups do not walk off the edge when the tray is carried, and there are two cut-out handles at the sides. Flat enough to hang on the wall between uses.',
+      descriptionBn:
+        'কিনারা যথেষ্ট উঁচু, তাই ট্রে বহনের সময় কাপ কিনারা পেরিয়ে যায় না; দুই পাশে কাটা হাতল আছে। যথেষ্ট সমতল, তাই ব্যবহার না থাকলে দেয়ালে ঝুলিয়েও রাখা যায়।',
+      materialsEn: 'Water-hyacinth weave, cotton embroidery, bound rim',
+      materialsBn: 'কচুরিপানার বুনন, সুতির সূচিকর্ম, বাঁধানো কিনারা',
+      careEn: 'Wipe spills immediately. Do not use as a cutting surface.',
+      careBn: 'কিছু পড়লে সাথে সাথে মুছুন। কাটাকাটির জন্য ব্যবহার করবেন না।',
+      dimensionsEn: '34cm diameter × 6cm deep',
+      dimensionsBn: '৩৪ সেমি ব্যাস × ৬ সেমি গভীর',
+      weightGrams: 340,
+      pricePoisha: taka(740),
+      discountPoisha: 0,
+      stock: 20,
+      lowStockThreshold: 6,
+      isFeatured: false,
+    },
+    {
+      slug: 'woven-wall-plate-set',
+      sku: 'BF-DEC-004',
+      category: 'home-decor',
+      nameEn: 'Woven Wall Plate Set of Five',
+      nameBn: 'বোনা দেয়াল-থালার সেট (৫ টি)',
+      shortDescEn: 'Five wall plates, each a different scene.',
+      shortDescBn: 'পাঁচটি দেয়াল-থালা, প্রতিটিতে আলাদা দৃশ্য।',
+      descriptionEn:
+        'Five plates in three sizes, so they can be hung as one cluster rather than a straight row. Each has a loop stitched into the back — no extra fitting needed, a single nail takes each one.',
+      descriptionBn:
+        'তিন মাপের পাঁচটি থালা, তাই সোজা সারিতে না ঝুলিয়ে একসাথে গুচ্ছ করে সাজানো যায়। প্রতিটির পিছনে সেলাই করা আংটা আছে — আলাদা কিছু লাগে না, একটি করে পেরেকেই হয়ে যায়।',
+      materialsEn: 'Jute cord coiled on a fiber base, cotton motif thread',
+      materialsBn: 'তন্তুর ভিতের উপর পাকানো পাটের দড়ি, নকশার সুতির সুতা',
+      careEn: 'Dust with a soft brush. Keep out of direct rain.',
+      careBn: 'নরম ব্রাশে ধুলো ঝাড়ুন। সরাসরি বৃষ্টিতে রাখবেন না।',
+      dimensionsEn: 'Largest 32cm, smallest 18cm diameter',
+      dimensionsBn: 'সবচেয়ে বড় ৩২ সেমি, ছোট ১৮ সেমি ব্যাস',
+      weightGrams: 880,
+      pricePoisha: taka(1680),
+      discountPoisha: taka(200),
+      stock: 8,
+      lowStockThreshold: 3,
+      isFeatured: true,
+    },
+    {
+      slug: 'embroidered-bread-basket',
+      sku: 'BF-DEC-005',
+      category: 'home-decor',
+      nameEn: 'Embroidered Bread Basket',
+      nameBn: 'সূচিকর্মের রুটির ঝুড়ি',
+      shortDescEn: 'Lined basket that keeps roti warm at the table.',
+      shortDescBn: 'টেবিলে রুটি গরম রাখার আস্তরণযুক্ত ঝুড়ি।',
+      descriptionEn:
+        'The cotton liner is what does the work: fold it over the top and the roti underneath stays warm through a whole meal. The liner lifts out and goes in the wash; the basket itself only ever needs wiping.',
+      descriptionBn:
+        'আসল কাজটা করে সুতির আস্তরণ: উপরে ভাঁজ করে ঢেকে দিলে নিচের রুটি পুরো খাওয়ার সময়টা গরম থাকে। আস্তরণ খুলে ধুয়ে ফেলা যায়; ঝুড়িটা শুধু মুছে নিলেই চলে।',
+      materialsEn: 'Water-hyacinth weave, removable cotton liner, cotton embroidery',
+      materialsBn: 'কচুরিপানার বুনন, খোলা যায় এমন সুতির আস্তরণ, সুতির সূচিকর্ম',
+      careEn: 'Wash the liner separately. Wipe the basket with a dry cloth.',
+      careBn: 'আস্তরণ আলাদা করে ধুয়ে নিন। ঝুড়ি শুকনো কাপড়ে মুছুন।',
+      dimensionsEn: '26cm × 18cm × 8cm',
+      dimensionsBn: '২৬ × ১৮ × ৮ সেমি',
+      weightGrams: 230,
+      pricePoisha: taka(590),
+      discountPoisha: 0,
+      stock: 31,
+      lowStockThreshold: 8,
+      isFeatured: false,
+    },
+    {
+      slug: 'round-lidded-keepsake-box',
+      sku: 'BF-GFT-003',
+      category: 'gift-items',
+      nameEn: 'Round Lidded Keepsake Box',
+      nameBn: 'গোল ঢাকনাওয়ালা স্মৃতি-বাক্স',
+      shortDescEn: 'A small box for jewellery or keepsakes.',
+      shortDescBn: 'গয়না বা ছোট স্মৃতিচিহ্ন রাখার বাক্স।',
+      descriptionEn:
+        'Light enough to post, sturdy enough that the lid still fits years later. The starburst on the lid is worked from the centre outward in a single continuous strand, which is the part that takes the longest to make.',
+      descriptionBn:
+        'ডাকে পাঠানোর মতো হালকা, আবার এত মজবুত যে বছর পেরিয়েও ঢাকনা ঠিকঠাক বসে। ঢাকনার তারার নকশাটি কেন্দ্র থেকে বাইরের দিকে একটানা এক সুতায় বোনা — এই অংশটুকুতেই সবচেয়ে বেশি সময় লাগে।',
+      materialsEn: 'Fine split cane over a fiber core, dyed accent strands',
+      materialsBn: 'তন্তুর ভিতের উপর সরু বেত, রং করা নকশার সুতা',
+      careEn: 'Keep dry. Dust with a soft brush.',
+      careBn: 'শুকনো রাখুন। নরম ব্রাশে ধুলো ঝাড়ুন।',
+      dimensionsEn: '18cm diameter × 8cm tall',
+      dimensionsBn: '১৮ সেমি ব্যাস × ৮ সেমি উঁচু',
+      weightGrams: 190,
+      pricePoisha: taka(520),
+      discountPoisha: 0,
+      stock: 29,
+      lowStockThreshold: 8,
+      isFeatured: false,
+    },
   ];
 
   let productCount = 0;
@@ -695,36 +1102,54 @@ async function main() {
       },
     });
 
-    // The product's primary image: its own photograph where one exists, the
-    // placeholder illustration otherwise.
+    // The product's gallery: its own photography where it exists, a single
+    // placeholder illustration otherwise. Position 0 is the primary image —
+    // the one the cards, the cart and the Open Graph tag use.
     //
-    // Idempotent by rewriting the existing row in place rather than inserting,
-    // so re-running the seed can never add a second image to a product. The
-    // previous version skipped products that already had an image, which meant
-    // it could create artwork but never correct it — real photography would
-    // never have reached a database seeded before it arrived.
-    const photograph = PHOTOGRAPHY_BY_SKU[product.sku];
-    if (photograph) photographed++;
-    const primaryImage = {
-      url: photograph?.url ?? placeholderFor(product.sku),
-      altEn: photograph?.altEn ?? product.nameEn,
-      altBn: photograph?.altBn ?? product.nameBn,
-    };
+    // Idempotent by rewriting the rows in place rather than inserting, so
+    // re-running the seed can never double a product's gallery. An earlier
+    // version skipped products that already had an image, which meant it could
+    // create artwork but never correct it — real photography would never have
+    // reached a database seeded before it arrived.
+    const photographs = PHOTOGRAPHY_BY_SKU[product.sku];
+    if (photographs) photographed++;
+    const desired = photographs ?? [
+      {
+        url: placeholderFor(product.sku),
+        altEn: product.nameEn,
+        altBn: product.nameBn,
+      },
+    ];
 
-    const existingImage = await db.productImage.findFirst({
+    const existingImages = await db.productImage.findMany({
       where: { productId: product.id },
       orderBy: { sortOrder: 'asc' },
     });
+    const managed = existingImages.filter((image) => isSeedManaged(image.url));
 
-    if (!existingImage) {
-      await db.productImage.create({
-        data: { productId: product.id, ...primaryImage, sortOrder: 0 },
-      });
-    } else if (isSeedManaged(existingImage.url)) {
-      await db.productImage.update({
-        where: { id: existingImage.id },
-        data: primaryImage,
-      });
+    // A row the seed does not recognise is someone else's — a Cloudinary
+    // upload made through the admin. The seed stands down from the whole
+    // gallery rather than interleaving its stand-ins with real photography.
+    if (managed.length === existingImages.length) {
+      for (const [sortOrder, image] of desired.entries()) {
+        const row = managed[sortOrder];
+        if (row) {
+          await db.productImage.update({
+            where: { id: row.id },
+            data: { ...image, sortOrder },
+          });
+        } else {
+          await db.productImage.create({
+            data: { productId: product.id, ...image, sortOrder },
+          });
+        }
+      }
+
+      // Rows left over from a longer gallery in an earlier run. Only ever the
+      // seed's own stand-ins — the branch above guarantees that.
+      for (const stale of managed.slice(desired.length)) {
+        await db.productImage.delete({ where: { id: stale.id } });
+      }
     }
 
     // Opening stock balance — the first row of the append-only audit trail.

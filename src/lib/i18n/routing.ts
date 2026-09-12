@@ -28,11 +28,24 @@ export const routing = defineRouting({
    * still serves English, and the cookie still keeps them there as they browse.
    */
   localeDetection: false,
-  localeCookie: {
-    name: 'NEXT_LOCALE',
-    maxAge: 60 * 60 * 24 * 365, // remember the choice for a year
-    sameSite: 'lax',
-  },
+  /**
+   * No locale cookie, and this is the single biggest thing on the site's
+   * speed.
+   *
+   * next-intl wrote `Set-Cookie: NEXT_LOCALE=…` on EVERY response, not just
+   * when the language changed. A response carrying Set-Cookie is specific to
+   * one visitor, so Next marks it `private, no-cache, no-store` and neither
+   * the CDN nor the ISR cache will ever serve it. Every page view — the
+   * homepage, every product, all sixteen content pages — was therefore a full
+   * server render plus database round trips, for everyone, every time.
+   *
+   * Nothing is lost by removing it. The cookie's only job was to steer the
+   * bare "/" redirect, and `localeDetection: false` above had already taken
+   * that job away, so it was costing the whole site its cacheability while
+   * steering nothing. The language lives in the URL (`localePrefix: 'always'`),
+   * which is what the switcher changes and what a shared link carries.
+   */
+  localeCookie: false,
 });
 
 /**

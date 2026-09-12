@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 
 import type { Prisma } from '@/generated/prisma/client';
 
@@ -240,8 +241,20 @@ export async function searchProducts(query: ShopQuery): Promise<ShopResult> {
   };
 }
 
-/** Every active category, for the shop's category filter. */
-export async function getShopCategories(): Promise<CategoryCardData[]> {
+/**
+ * Every active category, for the shop's category filter.
+ *
+ * The shop page is `force-dynamic` because its results depend on the query
+ * string — but this list does not. Without a cache every filtered view, every
+ * page of results and every search paid for the same query again. Cached
+ * across requests, it is one round trip an hour for the whole site instead of
+ * one per visitor.
+ *
+ * The product counts it carries can therefore lag by up to an hour. That is a
+ * number beside a filter label, not a fact anyone buys on.
+ */
+export const getShopCategories = unstable_cache(
+  async function getShopCategories(): Promise<CategoryCardData[]> {
   const categories = await db.category.findMany({
     where: { isActive: true },
     orderBy: { sortOrder: 'asc' },
@@ -253,7 +266,10 @@ export async function getShopCategories(): Promise<CategoryCardData[]> {
   });
 
   return categories.map(toCategoryCardData);
-}
+  },
+  ['shop-categories'],
+  { revalidate: 3600, tags: ['catalog'] },
+);
 
 /**
  * The cheapest and dearest prices in the catalogue, in poisha.
@@ -262,8 +278,12 @@ export async function getShopCategories(): Promise<CategoryCardData[]> {
  * left guessing what numbers are worth typing. Deliberately computed over the
  * whole catalogue rather than the current results: a range that moved every
  * time a filter changed would be a moving target.
+ *
+ * Cached across requests for the same reason as the category list: it is the
+ * same two numbers for every visitor, and it was being recomputed on each one.
  */
-export async function getPriceBounds(): Promise<{ min: number; max: number }> {
+export const getPriceBounds = unstable_cache(
+  async function getPriceBounds(): Promise<{ min: number; max: number }> {
   const result = await db.product.aggregate({
     where: STOREFRONT,
     _min: { effectivePricePoisha: true },
@@ -274,11 +294,36 @@ export async function getPriceBounds(): Promise<{ min: number; max: number }> {
     min: result._min.effectivePricePoisha ?? 0,
     max: result._max.effectivePricePoisha ?? 0,
   };
-}
+  },
+  ['shop-price-bounds'],
+  { revalidate: 3600, tags: ['catalog'] },
+);
 
 /* ------------------------------------------------------------------------ *
  * PRODUCT DETAIL (Sprint 4)
  * ------------------------------------------------------------------------ */
+
+/**
+ * Every storefront product's slug, for `generateStaticParams`.
+ *
+ * Prerendering the product pages is what lets them be cached at all: without
+ * a static params list, next-intl has to read the locale from the request
+ * headers, which opts the whole route out of caching no matter what
+ * `revalidate` says.
+ *
+ * A product added after the build is not in this list. It still works —
+ * `dynamicParams` is on by default, so Next renders it on demand and caches
+ * the result from then on.
+ */
+export async function getAllProductSlugs(): Promise<string[]> {
+  const products = await db.product.findMany({
+    where: STOREFRONT,
+    select: { slug: true },
+    orderBy: { slug: 'asc' },
+  });
+
+  return products.map((product) => product.slug);
+}
 
 /** Everything the product page shows, already localised into pairs. */
 export interface ProductDetail extends ProductCardData {

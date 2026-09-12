@@ -16,7 +16,11 @@ import {
   StockBadge,
   getStockLevel,
 } from '@/components/product';
-import { getProductBySlug, getRelatedProducts } from '@/server/repositories/catalog';
+import {
+  getAllProductSlugs,
+  getProductBySlug,
+  getRelatedProducts,
+} from '@/server/repositories/catalog';
 import { formatNumber } from '@/lib/format/money';
 
 /**
@@ -44,10 +48,40 @@ import { formatNumber } from '@/lib/format/money';
  */
 
 /**
- * Rendered per request: stock is the one fact on this page that must never be
- * stale, since it decides whether the customer can buy at all.
+ * Cached and revalidated, not rendered per request.
+ *
+ * This page used to be `force-dynamic` so the stock badge could never be
+ * stale. That cost every visitor a full render plus two database round trips
+ * on a page whose content changes a few times a day, and on a phone in a
+ * village that wait is the whole first impression.
+ *
+ * It is safe to cache because the badge is not what protects stock. Checkout
+ * takes stock with a conditional `update ... where stock >= quantity` inside a
+ * transaction (see src/server/checkout/placeOrder.ts), so an order for
+ * something that has just sold out fails with `stock-conflict` and writes
+ * nothing — whatever the page said a minute earlier. The badge is guidance;
+ * the transaction is the guarantee.
+ *
+ * Two minutes is the window a customer could see a sold-out item as available
+ * before the cart corrects them. Lowering it costs cache hits; raising it
+ * lengthens that window.
  */
-export const dynamic = 'force-dynamic';
+export const revalidate = 120;
+
+/**
+ * Prerender the catalogue at build time.
+ *
+ * Required, not an optimisation: `getTranslations` falls back to reading the
+ * locale from request headers unless the route's params are statically known,
+ * and that alone makes the page uncacheable. With this list the pages are
+ * built once and served from the cache, revalidating on the schedule above.
+ *
+ * Only the slugs — the `locale` segment comes from the layout above.
+ */
+export async function generateStaticParams() {
+  const slugs = await getAllProductSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 export async function generateMetadata({
   params,
