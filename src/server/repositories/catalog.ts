@@ -44,7 +44,8 @@ function toImageAsset(
       bn: row.altBn ?? fallbackAlt.bn,
     },
     // Placeholder artwork is served from /images/placeholders; anything else
-    // (a Cloudinary URL) is real photography.
+    // is real photography — /images/products while the photographs are staged
+    // locally, a Cloudinary URL once Sprint 10 uploads them.
     isPlaceholder: row.url.startsWith('/images/placeholders'),
   };
 }
