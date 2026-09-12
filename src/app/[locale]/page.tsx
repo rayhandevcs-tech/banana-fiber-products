@@ -38,9 +38,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'home' });
+  const tBrand = await getTranslations({ locale, namespace: 'brand' });
 
   return {
-    title: t('metaTitle'),
+    // The layout's `%s | brand` template only reaches CHILD segments, and the
+    // homepage shares the [locale] segment with the layout that defines it —
+    // so without this the shop's name is missing from the title of the one
+    // page most likely to be shared.
+    title: `${t('metaTitle')} | ${tBrand('name')}`,
     description: t('metaDescription'),
     alternates: {
       canonical: `/${locale}`,
