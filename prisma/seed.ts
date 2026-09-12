@@ -22,11 +22,11 @@ const db = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 const taka = (amount: number) => Math.round(amount * 100);
 
 /**
- * TEMPORARY placeholder artwork, keyed by SKU prefix.
+ * Placeholder artwork, keyed by SKU prefix.
  *
- * These are locally generated SVG illustrations, not photographs. When real
- * product photography is uploaded (Sprint 10), these ProductImage rows are
- * replaced and this map can be deleted — nothing else depends on it.
+ * Locally generated SVG illustrations, not photographs. Used for the products
+ * that do not have a photograph of their own yet — see PHOTOGRAPHY_BY_SKU
+ * below, which takes precedence wherever it has an entry.
  */
 const PLACEHOLDER_BY_PREFIX: Record<string, string> = {
   'BF-BSK': '/images/placeholders/basket.svg',
@@ -39,6 +39,67 @@ const PLACEHOLDER_BY_PREFIX: Record<string, string> = {
 
 const placeholderFor = (sku: string) =>
   PLACEHOLDER_BY_PREFIX[sku.slice(0, 6)] ?? '/images/placeholders/weave.svg';
+
+interface Photograph {
+  url: string;
+  altEn: string;
+  altBn: string;
+}
+
+/**
+ * REAL PRODUCT PHOTOGRAPHY, keyed by SKU.
+ *
+ * Served from /public as staging assets. Cloudinary (Sprint 10) replaces the
+ * `url` with a res.cloudinary.com URL and fills in `cloudinaryId`; nothing
+ * else has to change, because every surface in the application reads its
+ * image from the ProductImage row rather than from a path written into a
+ * component.
+ *
+ * The `/images/products` prefix carries meaning. `toImageAsset` in
+ * src/server/repositories/catalog.ts decides whether an image is placeholder
+ * artwork by its path — anything under `/images/placeholders` is treated as a
+ * stand-in — so a real photograph filed there would be mislabelled by the
+ * whole application.
+ *
+ * Only products with a photograph OF THAT ONE PRODUCT appear here. The
+ * remaining supplied images are shop-scene and collection shots held in
+ * /images/products/unmapped: a photograph of thirty assorted items tells a
+ * customer nothing about the one thing they are about to buy, so those
+ * products keep their placeholder illustration until they are photographed
+ * individually.
+ */
+const PHOTOGRAPHY_BY_SKU: Record<string, Photograph> = {
+  'BF-GFT-001': {
+    url: '/images/products/artisan-gift-hamper-basket.jpg',
+    altEn:
+      'Handwoven gift hamper basket with a fitted lid and two arched carrying handles, in teal and natural cream stripes',
+    altBn:
+      'ঢাকনা ও দুটি বাঁকানো হাতলসহ হাতে বোনা উপহারের ঝুড়ি, সবুজাভ নীল ও প্রাকৃতিক রঙের ডোরাকাটা নকশা',
+  },
+  'BF-STR-001': {
+    url: '/images/products/nested-storage-tray-set.jpg',
+    altEn:
+      'A nested set of round coiled storage trays in natural fiber, the smaller trays sitting inside the largest',
+    altBn:
+      'প্রাকৃতিক তন্তুর গোল স্টোরেজ ট্রে সেট, ছোট ট্রেগুলো বড়টির ভিতরে সাজানো',
+  },
+  'BF-BAG-001': {
+    url: '/images/products/woven-market-tote-bag.jpg',
+    altEn:
+      'Rectangular handwoven market tote bag in natural straw, with two braided carrying handles',
+    altBn:
+      'প্রাকৃতিক রঙের হাতে বোনা চারকোনা বাজারের টোট ব্যাগ, দুটি বিনুনি করা হাতলসহ',
+  },
+};
+
+/**
+ * Whether the seed put an image row there, and may therefore rewrite it.
+ *
+ * A URL the seed does not recognise — a Cloudinary upload made through the
+ * Sprint 10 admin, say — belongs to someone else and is never touched.
+ */
+const isSeedManaged = (url: string) =>
+  url.startsWith('/images/placeholders/') || url.startsWith('/images/products/');
 
 async function main() {
   console.log('Seeding database…\n');
@@ -551,6 +612,7 @@ async function main() {
   ];
 
   let productCount = 0;
+  let photographed = 0;
   for (const p of productData) {
     const { category, isActive, ...fields } = p;
     const product = await db.product.upsert({
@@ -563,20 +625,35 @@ async function main() {
       },
     });
 
-    // Placeholder artwork so the catalogue renders before real photography
-    // exists. Skipped if the product already has images.
-    const existingImages = await db.productImage.count({
+    // The product's primary image: its own photograph where one exists, the
+    // placeholder illustration otherwise.
+    //
+    // Idempotent by rewriting the existing row in place rather than inserting,
+    // so re-running the seed can never add a second image to a product. The
+    // previous version skipped products that already had an image, which meant
+    // it could create artwork but never correct it — real photography would
+    // never have reached a database seeded before it arrived.
+    const photograph = PHOTOGRAPHY_BY_SKU[product.sku];
+    if (photograph) photographed++;
+    const primaryImage = {
+      url: photograph?.url ?? placeholderFor(product.sku),
+      altEn: photograph?.altEn ?? product.nameEn,
+      altBn: photograph?.altBn ?? product.nameBn,
+    };
+
+    const existingImage = await db.productImage.findFirst({
       where: { productId: product.id },
+      orderBy: { sortOrder: 'asc' },
     });
-    if (existingImages === 0) {
+
+    if (!existingImage) {
       await db.productImage.create({
-        data: {
-          productId: product.id,
-          url: placeholderFor(product.sku),
-          altEn: product.nameEn,
-          altBn: product.nameBn,
-          sortOrder: 0,
-        },
+        data: { productId: product.id, ...primaryImage, sortOrder: 0 },
+      });
+    } else if (isSeedManaged(existingImage.url)) {
+      await db.productImage.update({
+        where: { id: existingImage.id },
+        data: primaryImage,
       });
     }
 
@@ -598,7 +675,11 @@ async function main() {
     productCount++;
   }
   console.log(`  ✓ ${productCount} products (1 low stock, 1 out of stock, 1 inactive)`);
-  console.log('  ✓ placeholder image attached to each product');
+  console.log(
+    `  ✓ primary image on each product (${photographed} photograph${
+      photographed === 1 ? '' : 's'
+    }, ${productCount - photographed} placeholder)`,
+  );
 
   // -------------------------------------------------------------------------
   // Settings
