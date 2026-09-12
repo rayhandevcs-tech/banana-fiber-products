@@ -385,3 +385,66 @@ export async function getRelatedProducts(
 
   return products.map(toProductCardData);
 }
+
+/* ------------------------------------------------------------------------ *
+ * CHECKOUT OPTIONS (Sprint 6)
+ * ------------------------------------------------------------------------ */
+
+export interface DeliveryOptions {
+  districts: { id: string; name: LocalizedText; division: LocalizedText }[];
+  methods: { id: string; code: string; name: LocalizedText; description: LocalizedText | null }[];
+}
+
+/**
+ * The districts and delivery methods a customer may choose between.
+ *
+ * Two small queries, both fully indexed, run once when the checkout page is
+ * rendered. Rates are deliberately NOT included: a charge depends on the
+ * subtotal (some rates are waived above a threshold), so it is quoted by the
+ * server for a specific cart rather than handed to the browser as a table it
+ * could apply itself.
+ */
+export async function getDeliveryOptions(): Promise<DeliveryOptions> {
+  const [districts, methods] = await Promise.all([
+    db.district.findMany({
+      where: { zone: { isActive: true } },
+      orderBy: { nameEn: 'asc' },
+      select: {
+        id: true,
+        nameEn: true,
+        nameBn: true,
+        divisionEn: true,
+        divisionBn: true,
+      },
+    }),
+    db.deliveryMethod.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+      select: {
+        id: true,
+        code: true,
+        nameEn: true,
+        nameBn: true,
+        descEn: true,
+        descBn: true,
+      },
+    }),
+  ]);
+
+  return {
+    districts: districts.map((district) => ({
+      id: district.id,
+      name: { en: district.nameEn, bn: district.nameBn },
+      division: { en: district.divisionEn, bn: district.divisionBn },
+    })),
+    methods: methods.map((method) => ({
+      id: method.id,
+      code: method.code,
+      name: { en: method.nameEn, bn: method.nameBn },
+      description:
+        method.descEn && method.descBn
+          ? { en: method.descEn, bn: method.descBn }
+          : null,
+    })),
+  };
+}

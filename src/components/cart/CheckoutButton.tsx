@@ -9,20 +9,19 @@ import { Button } from '@/components/ui';
 /**
  * The route to checkout.
  *
- * SPRINT 5 STATE: `/checkout` does not exist yet, and linking to it would send
- * customers to a genuine 404 — the one thing worse than a disabled button. So
- * the action is honestly inert and says so.
+ * Inert through Sprint 5, because `/checkout` did not exist and linking to it
+ * would have sent customers to a genuine 404 — the one thing worse than a
+ * disabled button. Sprint 6 built the route, so the constant below is now
+ * true and the link written for it is live; nothing else about this component
+ * changed.
  *
- * SPRINT 6: flip `CHECKOUT_READY` to true. Nothing else on this page changes —
- * the link, its label and its placement are already written below, so
- * activating checkout is a one-line edit rather than a redesign of the cart.
- *
- * This mirrors how `AddToCartButton` waited for the cart store in Sprint 2,
- * which flipped cleanly in Sprint 4.
+ * The same staged approach `AddToCartButton` used while waiting for the cart
+ * store: write the finished control, gate it on one constant, flip the
+ * constant when the thing it needs arrives.
  */
 
-/** Flipped to true in Sprint 6, when /[locale]/checkout exists. */
-const CHECKOUT_READY = false;
+/** Flipped in Sprint 6: /[locale]/checkout now exists. */
+const CHECKOUT_READY = true;
 
 export function CheckoutButton({ disabled = false }: { disabled?: boolean }) {
   const t = useTranslations('cartPage');
