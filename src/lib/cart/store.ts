@@ -164,3 +164,43 @@ export function selectItemCount(state: CartState): number {
 export function selectQuantityOf(state: CartState, productId: string): number {
   return state.lines.find((line) => line.productId === productId)?.quantity ?? 0;
 }
+
+/**
+ * The cart subtotal, in integer poisha.
+ *
+ * Computed from the effective (post-discount) price of each line, so it
+ * matches the prices printed beside the products. Kept here rather than in the
+ * cart page because it is money arithmetic: it must stay in whole poisha, and
+ * having exactly one implementation is what stops a rounding difference
+ * appearing between the line totals and the sum of them.
+ *
+ * Like every other figure in this store it is a display estimate. The amount a
+ * customer is actually charged is recomputed on the server at checkout.
+ */
+export function selectSubtotalPoisha(state: CartState): number {
+  return state.lines.reduce(
+    (total, line) => (isLineAvailable(line) ? total + lineTotalPoisha(line) : total),
+    0,
+  );
+}
+
+/**
+ * Whether a line can still be bought, as far as this browser knows.
+ *
+ * `stockAtAdd` is a reading taken when the product went into the cart, so a
+ * zero here means the product was already unavailable by the last information
+ * we had. Such a line stays visible — quietly dropping something a customer
+ * chose is worse than showing it — but it is marked, its stepper is turned
+ * off, and it is left out of the subtotal, because a total that includes
+ * something unbuyable is a figure the shop cannot honour.
+ *
+ * This is a snapshot, not the truth. Sprint 6 replaces it with a server check.
+ */
+export function isLineAvailable(line: CartLine): boolean {
+  return line.stockAtAdd > 0;
+}
+
+/** What one line costs: effective unit price × quantity, in poisha. */
+export function lineTotalPoisha(line: CartLine): number {
+  return Math.max(0, line.pricePoisha - line.discountPoisha) * line.quantity;
+}

@@ -333,6 +333,20 @@ model Order {
   // -- Customer (guest checkout: no account, no password) -------------------
   customerName  String
   customerPhone String // normalised 11-digit BD mobile
+  /// Optional: a guest may leave it blank, and nothing in the flow depends on
+  /// it. Collected only because a customer who gives one expects a receipt.
+  customerEmail String?
+
+  /// Idempotency key, supplied by the checkout form and unique per attempt.
+  ///
+  /// A double-tapped "Place Order", or a retry after a connection drops
+  /// mid-request, sends the same key twice; the unique index turns the second
+  /// write into a conflict that the action answers with the order already
+  /// created, instead of charging the customer's cart to two orders.
+  ///
+  /// Nullable so orders created by other means later (admin, phone orders)
+  /// need not invent one.
+  idempotencyKey String? @unique
 
   // -- Delivery address -----------------------------------------------------
   districtName String
