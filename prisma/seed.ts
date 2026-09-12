@@ -47,7 +47,7 @@ interface Photograph {
 }
 
 /**
- * REAL PRODUCT PHOTOGRAPHY, keyed by SKU.
+ * PRODUCT PHOTOGRAPHY, keyed by SKU.
  *
  * Served from /public as staging assets. Cloudinary (Sprint 10) replaces the
  * `url` with a res.cloudinary.com URL and fills in `cloudinaryId`; nothing
@@ -61,12 +61,14 @@ interface Photograph {
  * stand-in — so a real photograph filed there would be mislabelled by the
  * whole application.
  *
- * Only products with a photograph OF THAT ONE PRODUCT appear here. The
- * remaining supplied images are shop-scene and collection shots held in
- * /images/products/unmapped: a photograph of thirty assorted items tells a
- * customer nothing about the one thing they are about to buy, so those
- * products keep their placeholder illustration until they are photographed
- * individually.
+ * TEMPORARY, AND NOT ALL EQUAL. Three of these (the gift hamper, the tray set
+ * and the tote bag) photograph that one product on its own. The other six are
+ * workshop and collection shots showing many items at once; they are in use
+ * because the shop asked for every available picture to be shown until real
+ * photography exists, not because they identify the product. Their alt text
+ * therefore describes the scene truthfully rather than claiming a single item,
+ * and each should be replaced as soon as that product is photographed on its
+ * own.
  */
 const PHOTOGRAPHY_BY_SKU: Record<string, Photograph> = {
   'BF-GFT-001': {
@@ -89,6 +91,51 @@ const PHOTOGRAPHY_BY_SKU: Record<string, Photograph> = {
       'Rectangular handwoven market tote bag in natural straw, with two braided carrying handles',
     altBn:
       'প্রাকৃতিক রঙের হাতে বোনা চারকোনা বাজারের টোট ব্যাগ, দুটি বিনুনি করা হাতলসহ',
+  },
+
+  // --- Workshop and collection shots, standing in until each product is
+  // --- photographed on its own. The alt text describes the whole scene.
+  'BF-BSK-001': {
+    url: '/images/products/banana-fiber-storage-basket.jpg',
+    altEn:
+      'Workshop shelves lined with woven lidded storage containers and round mats',
+    altBn:
+      'কারখানার তাকজুড়ে সাজানো বোনা ঢাকনাওয়ালা পাত্র ও গোল মাদুর',
+  },
+  'BF-MAT-001': {
+    url: '/images/products/handwoven-floor-mat-large.jpg',
+    altEn:
+      'Stacks of thick coiled natural fiber mats in several sizes, with woven bowls beside them',
+    altBn:
+      'নানা মাপের মোটা পাকানো প্রাকৃতিক তন্তুর মাদুরের স্তূপ, পাশে বোনা বাটি',
+  },
+  'BF-STR-002': {
+    url: '/images/products/laundry-hamper-with-lid.jpg',
+    altEn:
+      'Large open woven baskets among assorted handwoven mats and household items',
+    altBn:
+      'বড় বোনা ঝুড়ি, সাথে নানা রকম হাতে বোনা মাদুর ও ঘরের জিনিসপত্র',
+  },
+  'BF-BAG-002': {
+    url: '/images/products/small-shoulder-bag.jpg',
+    altEn:
+      'Woven shoulder bags hanging in a row at the workshop, with round mirrors above them',
+    altBn:
+      'কারখানায় সারি করে ঝোলানো বোনা কাঁধব্যাগ, উপরে গোল আয়না',
+  },
+  'BF-DEC-001': {
+    url: '/images/products/banana-fiber-table-runner.jpg',
+    altEn:
+      'Rolled natural fiber runners laid out with a tote bag, a pouch and bundles of twine',
+    altBn:
+      'গুটিয়ে রাখা প্রাকৃতিক তন্তুর রানার, সাথে টোট ব্যাগ, পাউচ ও সুতার বান্ডিল',
+  },
+  'BF-GFT-002': {
+    url: '/images/products/coaster-set-of-six.jpg',
+    altEn:
+      'Small round lidded containers and woven coasters in many colours, displayed together',
+    altBn:
+      'নানা রঙের ছোট গোল ঢাকনাওয়ালা পাত্র ও বোনা কোস্টার, একসাথে সাজানো',
   },
 };
 
